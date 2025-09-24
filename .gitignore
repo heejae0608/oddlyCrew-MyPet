@@ -1,0 +1,5 @@
+.DS_Store
+xcuserdata/
+*.xcuserstate
+DerivedData/
+MyPet/Resources/Secrets/openai_secrets.json
