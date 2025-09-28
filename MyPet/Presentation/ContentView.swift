@@ -66,5 +66,6 @@ struct MainTabView: View {
                 }
                 .environmentObject(session)
         }
+        .tint(AppColor.orange)
     }
 }
