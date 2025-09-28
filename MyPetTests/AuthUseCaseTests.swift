@@ -82,9 +82,8 @@ struct AuthUseCaseTests {
             remoteUserDataSource: remote
         )
 
-        try await useCase.restoreSession()
+        let user = try await useCase.restoreSession()
 
-        let user = repository.currentUser
         #expect(user == existing)
         #expect(remote.upsertCallCount == 0)
     }
@@ -103,9 +102,8 @@ struct AuthUseCaseTests {
             remoteUserDataSource: remote
         )
 
-        try await useCase.restoreSession()
+        let user = try await useCase.restoreSession()
 
-        let user = repository.currentUser
         #expect(user?.appleUserID == "firebase-5")
         #expect(user?.name == "새 사용자")
         #expect(remote.upsertCallCount == 1)

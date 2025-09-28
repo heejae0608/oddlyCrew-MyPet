@@ -27,6 +27,7 @@ final class SessionViewModel: ObservableObject {
     private let petUseCase: PetUseCaseInterface
     private let petRepository: PetRepositoryInterface
     private var cancellables = Set<AnyCancellable>()
+    private var isRestoringSession = true
 
     init(
         authUseCase: AuthUseCaseInterface,
@@ -52,8 +53,11 @@ final class SessionViewModel: ObservableObject {
                 guard let self else { return }
                 Log.debug("세션 사용자 갱신: \(user?.name ?? "nil")", tag: "Session")
                 self.currentUser = user
+                if self.isRestoringSession {
+                    return
+                }
                 self.appState = .default
-                self.flow = user == nil ? .login : .main
+                self.updateFlow(for: user)
             }
             .store(in: &cancellables)
 
@@ -79,12 +83,14 @@ final class SessionViewModel: ObservableObject {
                 await MainActor.run {
                     self.appState = .default
                     self.flow = .main
+                    self.isRestoringSession = false
                 }
                 Log.info("세션 Apple 로그인 성공", tag: "Session")
             } catch {
                 await MainActor.run {
                     self.appState = .error(error.localizedDescription)
                     self.flow = .login
+                    self.isRestoringSession = false
                 }
                 Log.error("세션 Apple 로그인 실패: \(error.localizedDescription)", tag: "Session")
             }
@@ -101,6 +107,7 @@ final class SessionViewModel: ObservableObject {
                 await MainActor.run {
                     self.appState = .default
                     self.flow = .login
+                    self.isRestoringSession = false
                 }
                 Log.info("세션 로그아웃 성공", tag: "Session")
             } catch {
@@ -138,21 +145,28 @@ final class SessionViewModel: ObservableObject {
                 self.loadingMessage = "세션을 확인하고 있어요..."
                 self.flow = .splash
                 self.appState = .loading
+                self.isRestoringSession = true
             }
 
             do {
-                try await authUseCase.restoreSession()
+                let restoredUser = try await authUseCase.restoreSession()
                 await MainActor.run {
                     self.appState = .default
-                    self.flow = self.currentUser == nil ? .login : .main
+                    self.isRestoringSession = false
+                    self.updateFlow(for: restoredUser ?? self.currentUser)
                 }
             } catch {
                 await MainActor.run {
                     self.currentUser = nil
                     self.appState = .error(error.localizedDescription)
-                    self.flow = .login
+                    self.isRestoringSession = false
+                    self.updateFlow(for: nil)
                 }
             }
         }
+    }
+
+    private func updateFlow(for user: User?) {
+        flow = user == nil ? .login : .main
     }
 }

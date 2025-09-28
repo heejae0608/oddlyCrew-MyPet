@@ -37,27 +37,28 @@ struct LoginView: View {
 
                 Spacer()
 
-                // 애플 로그인 버튼
-                SignInWithAppleButton(
-                    .signIn,
-                onRequest: { request in
-                    request.requestedScopes = [.fullName, .email]
-                    let nonce = NonceUtil.randomNonceString()
-                    currentNonce = nonce
-                    request.nonce = NonceUtil.sha256(nonce)
-                    Log.debug("Apple SignIn 요청 준비", tag: "LoginView")
-                },
-                onCompletion: { result in
-                    handleSignInWithApple(result: result)
-                }
-            )
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 50)
-                .padding(.horizontal, 40)
+                if session.appState != .loading {
+                    SignInWithAppleButton(
+                        .signIn,
+                    onRequest: { request in
+                        request.requestedScopes = [.fullName, .email]
+                        let nonce = NonceUtil.randomNonceString()
+                        currentNonce = nonce
+                        request.nonce = NonceUtil.sha256(nonce)
+                        Log.debug("Apple SignIn 요청 준비", tag: "LoginView")
+                    },
+                    onCompletion: { result in
+                        handleSignInWithApple(result: result)
+                    }
+                )
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(height: 50)
+                    .padding(.horizontal, 40)
 
-                Text("Apple ID로 간편하게 로그인하세요")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                    Text("Apple ID로 간편하게 로그인하세요")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
 
                 Spacer()
             }

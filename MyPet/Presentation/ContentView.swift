@@ -12,14 +12,18 @@ struct ContentView: View {
     @EnvironmentObject private var session: SessionViewModel
 
     var body: some View {
-        switch session.flow {
-        case .splash:
-            SplashView()
-        case .login:
-            LoginView()
-        case .main:
-            MainTabView(container: container, session: session)
+        ZStack {
+            switch session.flow {
+            case .splash:
+                SplashView()
+            case .login:
+                LoginView()
+            case .main:
+                MainTabView(container: container, session: session)
+            }
         }
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.3), value: session.flow)
     }
 }
 

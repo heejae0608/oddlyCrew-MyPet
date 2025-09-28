@@ -4,25 +4,30 @@ struct SplashView: View {
     @EnvironmentObject private var session: SessionViewModel
 
     var body: some View {
-        VStack(spacing: 24) {
-            Image(systemName: "pawprint.circle.fill")
-                .font(.system(size: 72))
-                .foregroundColor(.blue)
+        ZStack {
+            AppColor.orange
+                .ignoresSafeArea()
 
-            Text("MyPet")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+            VStack(spacing: 24) {
+                Image(systemName: "pawprint.circle.fill")
+                    .font(.system(size: 88))
+                    .foregroundColor(.white)
 
-            VStack(spacing: 12) {
-                ProgressView()
-                    .progressViewStyle(.circular)
-                Text(session.loadingMessage)
-                    .font(.footnote)
-                    .foregroundColor(.gray)
+                Text("MyPet")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(.white)
+                    Text(session.loadingMessage)
+                        .font(.footnote)
+                        .foregroundColor(.white.opacity(0.85))
+                }
             }
+            .padding(40)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
-        .ignoresSafeArea()
     }
 }
