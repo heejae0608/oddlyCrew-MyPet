@@ -13,7 +13,7 @@ enum ChatMessageRole: String, Codable {
     case system
 }
 
-struct ChatMessage: Identifiable, Codable, Equatable {
+struct ChatMessage: Identifiable, Codable, Equatable, Hashable {
     var id: UUID
     var role: ChatMessageRole
     var content: String

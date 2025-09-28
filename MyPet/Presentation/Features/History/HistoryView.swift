@@ -11,6 +11,8 @@ struct HistoryView: View {
     @ObservedObject var viewModel: HistoryViewModel
     @EnvironmentObject private var session: SessionViewModel
     @State private var showingPetSelection = false
+    @State private var showingHistoryDetailView = false
+    @State private var selectedConversation: ChatConversation? = nil
     @State private var expandedConversationIDs: Set<UUID> = []
 
     private var groupedHistory: [(String, [ChatConversation])] {
@@ -31,7 +33,7 @@ struct HistoryView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack {
                 if session.pets.isNotEmpty {
                     petSelectionBar
@@ -45,18 +47,11 @@ struct HistoryView: View {
                         ForEach(groupedHistory, id: \.0) { dateString, conversations in
                             Section(header: Text(dateString)) {
                                ForEach(conversations) { conversation in
-                                    ChatConversationView(
-                                        conversation: conversation,
-                                        isExpanded: expandedConversationIDs.contains(conversation.id)
-                                    ) {
-                                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82, blendDuration: 0.2)) {
-                                            if expandedConversationIDs.contains(conversation.id) {
-                                                expandedConversationIDs.remove(conversation.id)
-                                            } else {
-                                                expandedConversationIDs.insert(conversation.id)
-                                            }
-                                        }
-                                    }
+                                   ChatConversationListView(
+                                    conversation: conversation
+                                   ) {
+                                       self.selectedConversation = conversation
+                                   }
                                 }
                             }
                         }
@@ -65,6 +60,14 @@ struct HistoryView: View {
                 }
             }
             .navigationTitle("상담 히스토리")
+            .navigationDestination(
+                item: $selectedConversation,
+                destination: { conversation in
+                    HistoryDetailView(
+                        conversation: conversation
+                    )
+                }
+            )
             .sheet(isPresented: $showingPetSelection) {
                 HistoryPetSelectionView(
                     pets: session.pets,
@@ -96,6 +99,108 @@ struct HistoryView: View {
             Spacer()
         }
         .padding(.horizontal)
+    }
+}
+
+struct ChatConversationListView: View {
+    let conversation: ChatConversation
+    let onToggle: () -> Void
+
+    private var messagePreviews: [ChatMessage] {
+        if conversation.messages.isEmpty == false {
+            return conversation.messages.sorted { $0.timestamp < $1.timestamp }
+        }
+
+        if conversation.responses.isEmpty == false {
+            return conversation.responses
+                .sorted { $0.date < $1.date }
+                .map { response in
+                    ChatMessage(
+                        id: UUID(),
+                        role: .assistant,
+                        content: response.summary,
+                        timestamp: response.date,
+                        petId: conversation.petId
+                    )
+                }
+        }
+
+        guard conversation.fullSummary.isEmpty == false else { return [] }
+        return [
+            ChatMessage(
+                id: UUID(),
+                role: .assistant,
+                content: conversation.fullSummary,
+                timestamp: conversation.lastUpdated,
+                petId: conversation.petId
+            )
+        ]
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "bubble.left.and.bubble.right.fill")
+                    .foregroundColor(.blue)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text("상담 세션")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                        if conversation.isCompleted {
+                            Text("완료")
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.green.opacity(0.2))
+                                .foregroundColor(.green)
+                                .cornerRadius(4)
+                        } else {
+                            Text("진행중")
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.orange.opacity(0.2))
+                                .foregroundColor(.orange)
+                                .cornerRadius(4)
+                        }
+                    }
+                    Text("\(conversation.responseCount)개 응답")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(conversation.startDate, style: .time)
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                    if conversation.startDate != conversation.lastUpdated {
+                        Text("최근 \(conversation.lastUpdated, style: .time)")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+
+            if messagePreviews.isEmpty {
+                Text("대화 기록 없음")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .italic()
+            } else {
+                Text(messagePreviews.last?.content ?? "")
+                    .font(.body)
+                    .foregroundColor(.primary)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onToggle)
+        .padding(.vertical, 8)
     }
 }
 

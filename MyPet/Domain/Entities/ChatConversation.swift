@@ -8,7 +8,7 @@
 import Foundation
 
 // 대화 세션 - 하나의 상담 세션 (상담 시작~완료까지)
-struct ChatConversation: Identifiable, Equatable {
+struct ChatConversation: Identifiable, Equatable, Hashable {
     let id: UUID
     let petId: UUID
     let startDate: Date
@@ -40,7 +40,7 @@ struct ChatConversation: Identifiable, Equatable {
 }
 
 // 개별 응답 - OpenAI response_id와 요약 포함
-struct ChatResponse: Identifiable, Equatable {
+struct ChatResponse: Identifiable, Equatable, Hashable {
     let id: UUID
     let responseId: String
     let summary: String
