@@ -28,7 +28,7 @@ struct HomeView: View {
     var body: some View {
         NavigationView {
             ZStack(alignment: .bottom) {
-                Color(.systemGroupedBackground)
+                AppColor.lightGray
                     .ignoresSafeArea()
 
                 if session.pets.isEmpty {
@@ -107,7 +107,7 @@ private struct HomeHeaderView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 46, height: 46)
-                .foregroundColor(.orange)
+                .foregroundColor(AppColor.orange)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(greeting)
@@ -120,18 +120,6 @@ private struct HomeHeaderView: View {
             }
 
             Spacer()
-
-            Button(action: {}) {
-                Image(systemName: "bell")
-                    .font(.title3)
-                    .foregroundColor(.primary)
-            }
-
-            Button(action: {}) {
-                Image(systemName: "gearshape")
-                    .font(.title3)
-                    .foregroundColor(.primary)
-            }
         }
     }
 }
@@ -156,9 +144,9 @@ private struct PetSelectorView: View {
                 Button(action: onRegisterTap) {
                     Image(systemName: "plus")
                         .font(.headline)
-                        .foregroundColor(.orange)
+                        .foregroundColor(AppColor.orange)
                         .frame(width: 44, height: 44)
-                        .background(Color.orange.opacity(0.15))
+                        .background(AppColor.orange.opacity(0.15))
                         .clipShape(Circle())
                 }
             }
@@ -176,7 +164,7 @@ private struct PetChip: View {
         Button(action: onTap) {
             HStack(spacing: 10) {
                 Image(systemName: "pawprint.fill")
-                    .foregroundColor(isSelected ? .white : .orange)
+                    .foregroundColor(isSelected ? .white : AppColor.orange)
 
                 Text(pet.name)
                     .font(.subheadline)
@@ -187,7 +175,7 @@ private struct PetChip: View {
             .padding(.horizontal, 16)
             .background(
                 Capsule()
-                    .fill(isSelected ? Color.orange : Color(.systemGray6))
+                    .fill(isSelected ? AppColor.orange : AppColor.lightGray)
             )
         }
     }
@@ -248,7 +236,7 @@ private struct PetImageCard: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color(.systemBackground))
+                .fill(AppColor.white)
                 .shadow(color: .black.opacity(0.07), radius: 10, x: 0, y: 10)
 
             GeometryReader { proxy in
@@ -290,7 +278,7 @@ private struct PetImageCard: View {
         Image(systemName: "pawprint.circle.fill")
             .resizable()
             .scaledToFit()
-            .foregroundColor(.orange.opacity(0.35))
+            .foregroundColor(AppColor.orange.opacity(0.35))
             .padding(18)
     }
 
@@ -320,7 +308,7 @@ private struct PetInfoCard<Content: View>: View {
             HStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.title3)
-                    .foregroundColor(.orange)
+                    .foregroundColor(AppColor.orange)
 
                 Text(title)
                     .font(.headline)
@@ -337,7 +325,7 @@ private struct PetInfoCard<Content: View>: View {
         .frame(maxWidth: .infinity, minHeight: 150)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color(.systemBackground))
+                .fill(AppColor.white)
                 .shadow(color: .black.opacity(0.07), radius: 10, x: 0, y: 10)
         )
     }
@@ -374,7 +362,7 @@ private struct HomeEmptyState: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 90, height: 90)
-                .foregroundColor(.orange.opacity(0.5))
+                .foregroundColor(AppColor.orange.opacity(0.5))
 
             Text("먼저 반려동물을 등록해 주세요")
                 .font(.title3)
@@ -391,14 +379,14 @@ private struct HomeEmptyState: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 28)
                     .padding(.vertical, 14)
-                    .background(Color.orange)
+                    .background(AppColor.orange)
                     .cornerRadius(20)
             }
         }
         .padding(32)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color(.systemBackground))
+                .fill(AppColor.white)
                 .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 12)
         )
     }
