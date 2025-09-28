@@ -80,10 +80,11 @@ struct ChatView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(Color.blue.opacity(0.1))
+                .background(AppColor.lightGray)
                 .cornerRadius(20)
             }
-            .foregroundColor(.blue)
+            .foregroundColor(AppColor.ink)
+            .padding(.vertical)
 
             Spacer()
 
@@ -200,6 +201,7 @@ struct ChatView: View {
                     }
                     isMessageFieldFocused = false
                 }
+                .font(.system(size: 16, weight: .regular))
                 .disabled(viewModel.isLoading)
 
                 // 전송 버튼
@@ -211,7 +213,7 @@ struct ChatView: View {
                         .font(.title2)
                         .foregroundColor(
                             viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading
-                            ? .gray : .blue
+                            ? AppColor.ink : AppColor.orange
                         )
                 }
                 .disabled(viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading)
@@ -235,22 +237,35 @@ private struct PetSelectionView: View {
         NavigationView {
             List {
                 Section {
-                    Label("전체 히스토리", systemImage: "clock.circle.fill")
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            onSelect(nil)
-                            dismiss()
-                        }
+                    Label {
+                        Text("전체 히스토리")
+                    } icon: {
+                        Image(systemName: "clock.circle.fill")
+                            .resizable()
+                            .frame(width: 25, height: 25)
+                            .foregroundColor(AppColor.orange)
+                            .scaledToFit()
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        onSelect(nil)
+                        dismiss()
+                    }
+                    
                 }
 
                 ForEach(pets) { pet in
                     HStack {
                         Image(systemName: "pawprint.circle.fill")
-                            .foregroundColor(.blue)
+                            .resizable()
+                            .foregroundColor(AppColor.orange)
+                            .frame(width: 25, height: 25)
+                            .scaledToFit()
 
                         VStack(alignment: .leading) {
                             Text(pet.name)
                                 .font(.headline)
+                                .foregroundColor(AppColor.ink)
                             Text("\(pet.species) • \(pet.age)살")
                                 .font(.caption)
                                 .foregroundColor(.gray)
@@ -260,7 +275,10 @@ private struct PetSelectionView: View {
 
                         if selectedPet?.id == pet.id {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.blue)
+                                .resizable()
+                                .foregroundColor(AppColor.orange)
+                                .frame(width: 25, height: 25)
+                                .scaledToFit()
                         }
                     }
                     .contentShape(Rectangle())
@@ -277,6 +295,7 @@ private struct PetSelectionView: View {
                     Button("닫기") {
                         dismiss()
                     }
+                    .foregroundColor(AppColor.ink)
                 }
             }
         }
@@ -290,7 +309,7 @@ private struct MissingPetInfoView: View {
         VStack(spacing: 24) {
             Image(systemName: "pawprint.circle")
                 .font(.system(size: 72))
-                .foregroundColor(.blue)
+                .foregroundColor(AppColor.orange)
 
             VStack(spacing: 8) {
                 Text("반려동물 정보를 먼저 등록해주세요")
@@ -308,7 +327,7 @@ private struct MissingPetInfoView: View {
                     .font(.headline)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
-                    .background(Color.blue)
+                    .background(AppColor.orange)
                     .foregroundColor(.white)
                     .cornerRadius(12)
             }
@@ -328,8 +347,8 @@ struct ChatMessageView: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(message.content)
                         .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
+                        .background(Color.gray.opacity(0.1))
+                        .foregroundColor(AppColor.ink)
                         .cornerRadius(16, corners: [.topLeft, .topRight, .bottomLeft])
                         .fixedSize(horizontal: false, vertical: true)
 
@@ -343,16 +362,16 @@ struct ChatMessageView: View {
                     // AI 헤더
                     HStack(spacing: 6) {
                         Image(systemName: "brain.head.profile")
-                            .foregroundColor(.green)
+                            .foregroundColor(AppColor.ink)
                         Text("AI 어시스턴트")
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundColor(AppColor.ink)
                     }
-
                     // 메인 메시지
                     Text(message.content)
                         .padding()
-                        .background(Color.gray.opacity(0.1))
+                        .background(AppColor.orange)
+                        .foregroundColor(.white)
                         .cornerRadius(16, corners: [.topLeft, .topRight, .bottomRight])
                         .fixedSize(horizontal: false, vertical: true)
 
@@ -507,11 +526,12 @@ struct EmptyChatView: View {
         VStack(spacing: 20) {
             Image(systemName: "message.circle")
                 .font(.system(size: 80))
-                .foregroundColor(.gray)
+                .foregroundColor(AppColor.orange)
 
             Text("AI 상담을 시작해보세요")
                 .font(.title2)
                 .fontWeight(.medium)
+                .foregroundColor(AppColor.ink)
 
             Text("반려동물의 건강이나 행동에 대해\n궁금한 것을 물어보세요!")
                 .font(.subheadline)
