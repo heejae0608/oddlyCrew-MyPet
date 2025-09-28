@@ -32,10 +32,14 @@ struct HomeView: View {
                     .ignoresSafeArea()
 
                 if session.pets.isEmpty {
-                    HomeEmptyState {
-                        showingPetRegistration = true
+                    VStack {
+                        Spacer()
+                        HomeEmptyState {
+                            showingPetRegistration = true
+                        }
+                        .padding(.horizontal, 32)
+                        Spacer()
                     }
-                    .padding(.horizontal, 32)
                 } else {
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 24) {
