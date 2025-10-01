@@ -8,26 +8,36 @@ struct SplashView: View {
             AppColor.orange
                 .ignoresSafeArea()
 
-            VStack(spacing: 24) {
-                Image(systemName: "pawprint.circle.fill")
-                    .font(.system(size: 88))
+            VStack(spacing: 0) {
+                Image("OurPetLogo")
+                    .renderingMode(.template)
+                    .resizable()
+                    .frame(width: 140, height: 140)
                     .foregroundColor(.white)
+                    .padding(.bottom, -15)
 
                 Text("OurPet")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
+                    .appFont(32, weight: .bold)
                     .foregroundColor(.white)
+                    .padding(.bottom, 20)
 
                 VStack(spacing: 12) {
                     ProgressView()
                         .progressViewStyle(.circular)
                         .tint(.white)
                     Text(session.loadingMessage)
-                        .font(.footnote)
+                        .appFont(13, weight: .semibold)
                         .foregroundColor(.white.opacity(0.85))
                 }
             }
             .padding(40)
         }
+    }
+}
+
+struct SplashView_Previews: PreviewProvider {
+    @MainActor static var previews: some View {
+        SplashView()
+            .environmentObject(PreviewSessionFactory.makeSession())
     }
 }

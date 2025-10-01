@@ -10,59 +10,66 @@ import AuthenticationServices
 
 struct LoginView: View {
     @EnvironmentObject private var session: SessionViewModel
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var currentNonce: String?
     
     var body: some View {
         ZStack {
-            VStack(spacing: 40) {
+            VStack(spacing: 0) {
                 Spacer()
 
                 // 로고 및 앱 제목
-                VStack(spacing: 20) {
-                    Image(systemName: "pawprint.circle.fill")
-                        .font(.system(size: 100))
+                VStack(spacing: 0) {
+                    Image("OurPetLogo")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 140, height: 140)
                         .foregroundColor(AppColor.orange)
+                        .padding(.bottom, -20)
 
                     Text("OurPet")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                        .appFont(32, weight: .bold)
+                        .foregroundColor(AppColor.text)
+                        .padding(.bottom, 10)
 
                     Text("반려동물과 함께하는 특별한 시간")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
+                        .appFont(15, weight: .medium)
+                        .foregroundColor(AppColor.subText)
                         .multilineTextAlignment(.center)
                 }
 
                 Spacer()
-
+                
                 if session.appState != .loading {
                     SignInWithAppleButton(
                         .signIn,
-                    onRequest: { request in
-                        request.requestedScopes = [.fullName, .email]
-                        let nonce = NonceUtil.randomNonceString()
-                        currentNonce = nonce
-                        request.nonce = NonceUtil.sha256(nonce)
-                        Log.debug("Apple SignIn 요청 준비", tag: "LoginView")
-                    },
-                    onCompletion: { result in
-                        handleSignInWithApple(result: result)
-                    }
-                )
-                    .signInWithAppleButtonStyle(.black)
+                        onRequest: { request in
+                            request.requestedScopes = [.fullName, .email]
+                            let nonce = NonceUtil.randomNonceString()
+                            currentNonce = nonce
+                            request.nonce = NonceUtil.sha256(nonce)
+                            Log.debug("Apple SignIn 요청 준비", tag: "LoginView")
+                        },
+                        onCompletion: { result in
+                            handleSignInWithApple(result: result)
+                        }
+                    )
+                    .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
                     .frame(height: 50)
                     .padding(.horizontal, 40)
-
+                    .padding(.bottom, 10)
+                    
                     Text("Apple ID로 간편하게 로그인하세요")
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                        .appFont(13)
+                        .foregroundColor(AppColor.subText)
                 }
-
+                
                 Spacer()
             }
-
+            
             if session.appState == .loading {
                 Color.black.opacity(0.3)
                     .ignoresSafeArea()
@@ -124,6 +131,15 @@ struct LoginView: View {
             alertMessage = "로그인에 실패했습니다: \(error.localizedDescription)"
             showingAlert = true
             Log.error("Apple 로그인 오류: \(error.localizedDescription)", tag: "LoginView")
+        }
+    }
+}
+
+struct LoginView_Previews: PreviewProvider {
+    @MainActor static var previews: some View {
+        Group {
+            LoginView()
+                .environmentObject(PreviewSessionFactory.makeSession(pets: []))
         }
     }
 }
