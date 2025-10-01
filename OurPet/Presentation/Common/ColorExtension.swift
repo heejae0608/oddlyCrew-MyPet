@@ -13,5 +13,6 @@ enum AppColor {
     static let peach = Color("AppPeach")
     static let white = Color("AppWhite")
     static let lightGray = Color("AppLightGray")
+    static let text = Color("Text")
+    static let subText = Color("SubText")
 }
-
