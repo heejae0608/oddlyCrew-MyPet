@@ -2,4 +2,4 @@
 xcuserdata/
 *.xcuserstate
 DerivedData/
-MyPet/Resources/Secrets/openai_secrets.json
+OurPet/Resources/Secrets/openai_secrets.json

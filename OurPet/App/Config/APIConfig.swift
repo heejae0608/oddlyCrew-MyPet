@@ -1,0 +1,73 @@
+//
+//  APIConfig.swift
+//  OurPet
+//
+//  Created by 전희재 on 9/17/25.
+//
+
+import Foundation
+
+// MARK: - API 설정 관리
+class APIConfig: ObservableObject {
+    static let shared = APIConfig()
+    
+    private init() {}
+    
+    private static let secrets = SecretsLoader.load()
+    
+    private struct SecretsLoader {
+        struct SecretBundle: Decodable {
+            let apiKey: String?
+
+            enum CodingKeys: String, CodingKey {
+                case apiKey = "api_key"
+            }
+        }
+
+        static func load() -> SecretBundle {
+            let bundle = Bundle.main
+            let candidates: [(name: String, ext: String)] = [
+                ("openai_secrets", "json"),
+                ("openai_secrets.local", "json"),
+                ("openai_secrets", "json.template")
+            ]
+
+            for candidate in candidates {
+                if let url = bundle.url(forResource: candidate.name, withExtension: candidate.ext) {
+                    do {
+                        let data = try Data(contentsOf: url)
+                        let decoded = try JSONDecoder().decode(SecretBundle.self, from: data)
+                        if decoded.apiKey?.isEmpty == false {
+                            if candidate.ext == "json.template" {
+                                Log.warning("openai_secrets.json.template에서 API 키를 로드했습니다. 템플릿 파일은 Git에 커밋되지 않도록 주의하세요.", tag: "APIConfig")
+                            }
+                            return decoded
+                        }
+                    } catch {
+                        Log.warning("\(candidate.name).\(candidate.ext) 파싱 실패: \(error.localizedDescription)", tag: "APIConfig")
+                    }
+                }
+            }
+
+            return SecretBundle(apiKey: nil)
+        }
+    }
+    
+    // MARK: - OpenAI API 설정 (Responses API)
+    struct OpenAI {
+        static let apiKey: String = {
+            if let key = APIConfig.secrets.apiKey, key.isEmpty == false {
+                return key
+            }
+            return ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? ""
+        }()
+
+        static let baseURL = "https://api.openai.com/v1/"
+    }
+    
+    // MARK: - Claude API 설정 (향후 확장용)
+    struct Claude {
+        static let apiKey = ProcessInfo.processInfo.environment["CLAUDE_API_KEY"] ?? ""
+        static let model = "claude-3-sonnet-20240229"
+    }
+}
