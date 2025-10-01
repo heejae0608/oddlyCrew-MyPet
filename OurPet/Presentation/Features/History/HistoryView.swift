@@ -42,6 +42,7 @@ struct HistoryView: View {
 
                 if viewModel.filteredConversations.isEmpty {
                     EmptyHistoryView()
+                        .frame(maxHeight: .infinity, alignment: .center)
                 } else {
                     List {
                         ForEach(groupedHistory, id: \.0) { dateString, conversations in
@@ -52,11 +53,16 @@ struct HistoryView: View {
                                    ) {
                                        self.selectedConversation = conversation
                                    }
+                                   .listRowSeparator(.hidden)
+                                   .listRowInsets(EdgeInsets())
+                                   .padding(.vertical, 8)
+                                   .padding(.horizontal, 16)
                                 }
                             }
+                            
                         }
                     }
-                    .listStyle(.insetGrouped)
+                    .listStyle(.plain)
                 }
             }
             .navigationTitle("상담 히스토리")
@@ -86,15 +92,21 @@ struct HistoryView: View {
             } label: {
                 HStack {
                     Image(systemName: "pawprint.fill")
+                        .foregroundStyle(.appWhite)
                     Text(viewModel.selectedPet?.name ?? "전체 히스토리")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.appWhite)
                     Image(systemName: "chevron.down")
+                        .foregroundStyle(.appWhite)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(Color.blue.opacity(0.1))
-                .cornerRadius(20)
+                .background(
+                    Capsule()
+                        .fill(.appOrange)
+                )
             }
-            .foregroundColor(.blue)
 
             Spacer()
         }
@@ -141,7 +153,7 @@ struct ChatConversationListView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "bubble.left.and.bubble.right.fill")
-                    .foregroundColor(.blue)
+                    .foregroundColor(.appOrange)
 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
@@ -201,6 +213,12 @@ struct ChatConversationListView: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onToggle)
         .padding(.vertical, 8)
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.appWhite)
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        )
     }
 }
 
@@ -369,7 +387,7 @@ private struct HistoryPetSelectionView: View {
             List {
                 HStack {
                     Image(systemName: "clock.circle.fill")
-                        .foregroundColor(.blue)
+                        .foregroundColor(.appOrange)
 
                     VStack(alignment: .leading) {
                         Text("전체 히스토리")
@@ -383,7 +401,7 @@ private struct HistoryPetSelectionView: View {
 
                     if selectedPet == nil {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.blue)
+                            .foregroundColor(.appOrange)
                     }
                 }
                 .contentShape(Rectangle())
@@ -395,7 +413,7 @@ private struct HistoryPetSelectionView: View {
                 ForEach(pets) { pet in
                     HStack {
                         Image(systemName: "pawprint.circle.fill")
-                            .foregroundColor(.blue)
+                            .foregroundColor(.appOrange)
 
                         VStack(alignment: .leading) {
                             Text(pet.name)
@@ -409,7 +427,7 @@ private struct HistoryPetSelectionView: View {
 
                         if selectedPet?.id == pet.id {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.appOrange)
                         }
                     }
                     .contentShape(Rectangle())
@@ -437,3 +455,4 @@ private extension Array where Element: Identifiable {
         isEmpty == false
     }
 }
+  
