@@ -245,7 +245,7 @@ private struct MessageWithPetInfoPayload: Encodable {
         self.pet_info = PetInfo(
             type: pet.species,
             breed: pet.breed,
-            age: "\(pet.age)살",
+            age: "\(pet.calculatedAge)살",
             gender: pet.gender,
             neutered: pet.isNeutered,
             weight: pet.weight.map { "\($0)kg" },

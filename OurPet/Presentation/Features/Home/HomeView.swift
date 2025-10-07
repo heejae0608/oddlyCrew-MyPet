@@ -200,7 +200,7 @@ private struct PetOverviewSection: View {
             PetImageCard(pet: pet)
 
             PetInfoCard(icon: "clock", title: "Age") {
-                InfoValueView(value: "\(pet.age)", unit: "Years")
+                InfoValueView(value: "\(pet.calculatedAge)", unit: "Years")
             }
 
             PetInfoCard(icon: "scalemass", title: "Weight") {
@@ -437,24 +437,26 @@ enum PreviewSessionFactory {
             name: "Choco",
             species: "Dog",
             breed: "Corgi",
-            age: 3,
             gender: "Male",
             isNeutered: true,
             weight: 9.2,
             profileImageName: nil,
-            existingConditions: "Allergic to chicken"
+            existingConditions: "Allergic to chicken",
+            birthDate: Calendar.current.date(byAdding: .year, value: -3, to: Date()),
+            adoptionDate: Calendar.current.date(byAdding: .year, value: -2, to: Date())
         ),
         Pet(
             userId: sampleUser.id,
             name: "Nabi",
             species: "Cat",
             breed: "Calico",
-            age: 2,
             gender: "Female",
             isNeutered: false,
             weight: 4.1,
             profileImageName: nil,
-            existingConditions: "No known issues"
+            existingConditions: "No known issues",
+            birthDate: Calendar.current.date(byAdding: .year, value: -2, to: Date()),
+            adoptionDate: Calendar.current.date(byAdding: .year, value: -1, to: Date())
         )
     ]
 }

@@ -107,11 +107,18 @@ final class ChatGPTService: ChatGPTServicing {
         var inputItems: [ResponseInputItem] = []
 
         // 시스템 프롬프트 + 펫 정보
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy.MM.dd"
+
+        let birthInfo = pet.birthDate.map { dateFormatter.string(from: $0) } ?? "알 수 없음"
+        let adoptionInfo = pet.adoptionDate.map { dateFormatter.string(from: $0) } ?? "알 수 없음"
+
         let petInfo = """
         이름: \(pet.name)
         종류: \(pet.species)
         품종: \(pet.breed ?? "알 수 없음")
-        나이: \(pet.age)살
+        태어난 날짜: \(birthInfo)
+        집에 온 날짜: \(adoptionInfo)
         성별: \(pet.gender)
         중성화: \(pet.isNeutered ? "완료" : "미완료")
         체중: \(pet.weight.map { "\($0)kg" } ?? "알 수 없음")

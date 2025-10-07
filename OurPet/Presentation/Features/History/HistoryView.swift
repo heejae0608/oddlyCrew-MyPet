@@ -400,7 +400,7 @@ private struct HistoryPetSelectionView: View {
                         VStack(alignment: .leading) {
                             Text(pet.name)
                                 .font(.headline)
-                            Text("\(pet.species) • \(pet.age)살")
+                            Text("\(pet.species) • \(pet.calculatedAge)살")
                                 .font(.caption)
                                 .foregroundColor(.gray)
                         }
