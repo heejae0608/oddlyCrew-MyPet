@@ -15,4 +15,12 @@ enum AppColor {
     static let lightGray = Color("AppLightGray")
     static let text = Color("Text")
     static let subText = Color("SubText")
+    static let formBackground = Color("FormBackground")
+    static let cardSurface = Color("CardSurface")
+    static let cardBorder = Color("CardBorder")
+    static let inputSurface = Color("InputSurface")
+    static let inputBorder = Color("InputBorder")
+    static let profileBadgeBackground = Color("ProfileBadgeBackground")
+    static let profileBadgeIcon = Color("ProfileBadgeIcon")
+    static let placeholderText = Color("PlaceholderText")
 }
