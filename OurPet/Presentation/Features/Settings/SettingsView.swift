@@ -6,13 +6,15 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct SettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
     @EnvironmentObject private var session: SessionViewModel
     @State private var showingLogoutAlert = false
-    @State private var showingDeleteDataAlert = false
+    @State private var showingDeleteAccountAlert = false
     @State private var errorMessage: String?
+    @State private var showingEmailCopiedAlert = false
 
     var body: some View {
         NavigationView {
@@ -23,7 +25,6 @@ struct SettingsView: View {
                 }
 
                 appInfoSection
-                dataSection
                 accountSection
                 cautionSection
             }
@@ -36,13 +37,18 @@ struct SettingsView: View {
             } message: {
                 Text("정말 로그아웃하시겠습니까?")
             }
-            .alert("데이터 삭제", isPresented: $showingDeleteDataAlert) {
+            .alert("계정 삭제", isPresented: $showingDeleteAccountAlert) {
                 Button("취소", role: .cancel) { }
                 Button("삭제", role: .destructive) {
-                    viewModel.deleteAllData()
+                    viewModel.deleteAccount()
                 }
             } message: {
-                Text("모든 반려동물 정보와 상담 기록이 삭제됩니다. 이 작업은 되돌릴 수 없습니다.")
+                Text("계정과 모든 데이터가 영구적으로 삭제됩니다. 계속하시겠습니까?")
+            }
+            .alert("이메일 복사 완료", isPresented: $showingEmailCopiedAlert) {
+                Button("확인", role: .cancel) { }
+            } message: {
+                Text("개발자 이메일이 클립보드에 복사되었습니다.")
             }
             .overlay {
                 if session.appState == .loading {
@@ -82,6 +88,12 @@ struct SettingsView: View {
             } message: { message in
                 Text(message)
             }
+            .task {
+                await viewModel.refreshConsultationCount(pets: session.pets)
+            }
+            .onChange(of: session.pets) { pets in
+                Task { await viewModel.refreshConsultationCount(pets: pets) }
+            }
         }
     }
 
@@ -102,7 +114,7 @@ struct SettingsView: View {
                             .foregroundColor(.gray)
                     }
 
-                    Text("가입일: \(user.registrationDate, style: .date)")
+                    Text("가입일: \(formattedJoinDate(user.registrationDate))")
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
@@ -124,6 +136,14 @@ struct SettingsView: View {
                     .foregroundColor(.gray)
             }
 
+            HStack {
+                Image(systemName: "message.fill")
+                    .foregroundColor(.orange)
+                Text("상담 횟수")
+                Spacer()
+                Text("\(viewModel.consultationCount)회")
+                    .foregroundColor(.gray)
+            }
         }
     }
 
@@ -138,29 +158,56 @@ struct SettingsView: View {
                     .foregroundColor(.gray)
             }
 
-            HStack {
-                Image(systemName: "questionmark.circle")
-                    .foregroundColor(.blue)
-                Text("도움말")
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.gray)
-                    .font(.caption)
+            if let url = viewModel.appStoreURL {
+                Link(destination: url) {
+                    HStack {
+                        Image(systemName: "link")
+                            .foregroundColor(.blue)
+                        Text("앱스토어에서 보기")
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .foregroundColor(.gray)
+                            .font(.caption)
+                    }
+                }
             }
-        }
-    }
 
-    private var dataSection: some View {
-        Section("데이터 관리") {
             Button {
-                showingDeleteDataAlert = true
+                UIPasteboard.general.string = viewModel.developerEmail
+                showingEmailCopiedAlert = true
             } label: {
                 HStack {
-                    Image(systemName: "trash")
-                        .foregroundColor(.red)
-                    Text("모든 데이터 삭제")
-                        .foregroundColor(.red)
+                    Image(systemName: "envelope.fill")
+                        .foregroundColor(.purple)
+                    Text("개발자 문의")
+                    Spacer()
+                    Text(viewModel.developerEmail)
+                        .foregroundColor(.gray)
                 }
+            }
+            .buttonStyle(.plain)
+
+            NavigationLink {
+                OpenSourceLicensesView(licenses: viewModel.openSourceLicenses)
+            } label: {
+                HStack {
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .foregroundColor(.blue)
+                    Text("오픈소스 라이선스")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.gray)
+                        .font(.caption)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("© 2025 OurPet")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                Text("All rights reserved.")
+                    .font(.caption)
+                    .foregroundColor(.gray)
             }
         }
     }
@@ -174,6 +221,17 @@ struct SettingsView: View {
                     Image(systemName: "rectangle.portrait.and.arrow.right")
                         .foregroundColor(.red)
                     Text("로그아웃")
+                        .foregroundColor(.red)
+                }
+            }
+
+            Button {
+                showingDeleteAccountAlert = true
+            } label: {
+                HStack {
+                    Image(systemName: "person.crop.circle.badge.xmark")
+                        .foregroundColor(.red)
+                    Text("계정 삭제")
                         .foregroundColor(.red)
                 }
             }
@@ -196,5 +254,17 @@ struct SettingsView: View {
             }
             .padding(.vertical, 4)
         }
+    }
+}
+
+private extension SettingsView {
+    static let joinDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy.MM.dd"
+        return formatter
+    }()
+
+    func formattedJoinDate(_ date: Date) -> String {
+        Self.joinDateFormatter.string(from: date)
     }
 }

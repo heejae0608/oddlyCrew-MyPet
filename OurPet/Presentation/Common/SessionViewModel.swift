@@ -119,6 +119,33 @@ final class SessionViewModel: ObservableObject {
         }
     }
 
+    func deleteAccount() {
+        loadingMessage = "계정을 삭제하는 중입니다..."
+        appState = .loading
+        isRestoringSession = true
+        Log.info("세션 계정 삭제 플로우 시작", tag: "Session")
+        Task {
+            do {
+                try await authUseCase.deleteAccount()
+                await MainActor.run {
+                    self.currentUser = nil
+                    self.pets = []
+                    self.petUseCase.clearAllPets()
+                    self.appState = .default
+                    self.flow = .login
+                    self.isRestoringSession = false
+                }
+                Log.info("세션 계정 삭제 성공", tag: "Session")
+            } catch {
+                await MainActor.run {
+                    self.appState = .error(error.localizedDescription)
+                    self.isRestoringSession = false
+                }
+                Log.error("세션 계정 삭제 실패: \(error.localizedDescription)", tag: "Session")
+            }
+        }
+    }
+
     func addPet(_ pet: Pet) {
         petUseCase.addPet(pet)
     }

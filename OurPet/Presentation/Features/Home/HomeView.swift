@@ -484,6 +484,8 @@ private final class PreviewAuthUseCase: AuthUseCaseInterface {
 
     func logout() async throws {}
 
+    func deleteAccount() async throws {}
+
     func restoreSession() async throws -> User? {
         subject.value
     }

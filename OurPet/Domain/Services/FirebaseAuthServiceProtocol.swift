@@ -18,4 +18,5 @@ protocol FirebaseAuthServiceProtocol {
     func signOut() throws
     func currentUser() -> FirebaseUserInfo?
     func fetchIDToken(forceRefresh: Bool) async throws -> String?
+    func deleteAccount() async throws
 }
