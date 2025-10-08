@@ -12,17 +12,22 @@ import Combine
 struct HomeView: View {
     @EnvironmentObject private var session: SessionViewModel
     @State private var showingPetRegistration = false
-    @State private var selectedPetID: UUID?
+    @State private var showingOrderSheet = false
+    @State private var customOrder: [UUID] = []
 
-    private var selectedPet: Pet? {
-        guard let id = selectedPetID else { return session.pets.first }
-        return session.pets.first(where: { $0.id == id }) ?? session.pets.first
-    }
-
-    private var orderedPets: [Pet] {
-        guard let selected = selectedPet else { return session.pets }
-        let others = session.pets.filter { $0.id != selected.id }
-        return [selected] + others
+    private var sortedPets: [Pet] {
+        if customOrder.isEmpty == false {
+            let orderMap = Dictionary(uniqueKeysWithValues: customOrder.enumerated().map { ($0.element, $0.offset) })
+            return session.pets.sorted { lhs, rhs in
+                let lhsIndex = orderMap[lhs.id] ?? Int.max
+                let rhsIndex = orderMap[rhs.id] ?? Int.max
+                if lhsIndex == rhsIndex {
+                    return lhs.registrationDate > rhs.registrationDate
+                }
+                return lhsIndex < rhsIndex
+            }
+        }
+        return session.pets.sorted { $0.registrationDate > $1.registrationDate }
     }
 
     var body: some View {
@@ -43,20 +48,14 @@ struct HomeView: View {
                 } else {
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 24) {
-                            HomeHeaderView(name: session.currentUser?.name ?? "사용자")
-
-                            PetSelectorView(
-                                pets: orderedPets,
-                                selectedPetID: selectedPet?.id,
-                                onSelect: { pet in
-                                    selectedPetID = pet.id
-                                },
-                                onRegisterTap: {
-                                    showingPetRegistration = true
-                                }
+                            HomeHeaderView(
+                                name: session.currentUser?.name ?? "사용자",
+                                onAddPet: { showingPetRegistration = true },
+                                hasPets: session.pets.isEmpty == false,
+                                onReorderTap: { openReorderSheet() }
                             )
 
-                            if let pet = selectedPet {
+                            ForEach(sortedPets) { pet in
                                 PetOverviewSection(pet: pet)
                             }
                         }
@@ -72,19 +71,68 @@ struct HomeView: View {
             PetRegistrationView()
                 .environmentObject(session)
         }
+        .sheet(isPresented: $showingOrderSheet) {
+            PetOrderSheet(
+                pets: session.pets,
+                initialOrder: customOrder,
+                onComplete: { newOrder in
+                    if newOrder != customOrder {
+                        customOrder = newOrder
+                        session.updatePetOrder(newOrder)
+                    }
+                }
+            )
+        }
         .onAppear {
-            if selectedPetID == nil {
-                selectedPetID = session.pets.first?.id
-            }
+            syncOrder(with: session.pets)
         }
         .onChange(of: session.pets) { pets in
-            guard let currentID = selectedPetID else {
-                selectedPetID = pets.first?.id
-                return
-            }
+            syncOrder(with: pets)
+        }
+        .onChange(of: session.currentUser?.petOrder ?? []) { _ in
+            syncOrder(with: session.pets)
+        }
+        .onChange(of: session.currentUser?.id) { _ in
+            syncOrder(with: session.pets)
+        }
+    }
 
-            if pets.contains(where: { $0.id == currentID }) == false {
-                selectedPetID = pets.first?.id
+    private func openReorderSheet() {
+        guard session.pets.isEmpty == false else { return }
+        syncOrder(with: session.pets)
+        showingOrderSheet = true
+    }
+
+    private func syncOrder(with pets: [Pet]) {
+        let ids = pets.map(\.id)
+        guard ids.isEmpty == false else {
+            customOrder = []
+            return
+        }
+        var updatedOrder = customOrder
+
+        if showingOrderSheet == false,
+           let storedOrder = session.currentUser?.petOrder,
+           storedOrder.isEmpty == false,
+           storedOrder != customOrder {
+            updatedOrder = storedOrder
+        }
+
+        if updatedOrder.isEmpty {
+            updatedOrder = ids
+        } else {
+            updatedOrder = updatedOrder.filter(ids.contains)
+            for id in ids where updatedOrder.contains(id) == false {
+                updatedOrder.append(id)
+            }
+        }
+
+        if updatedOrder != customOrder {
+            customOrder = updatedOrder
+            if showingOrderSheet == false,
+               session.currentUser != nil,
+               session.currentUser?.petOrder != updatedOrder {
+                session.updatePetOrder(updatedOrder)
             }
         }
     }
@@ -94,6 +142,9 @@ struct HomeView: View {
 
 private struct HomeHeaderView: View {
     let name: String
+    let onAddPet: () -> Void
+    let hasPets: Bool
+    let onReorderTap: () -> Void
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
@@ -124,63 +175,21 @@ private struct HomeHeaderView: View {
             }
 
             Spacer()
-        }
-    }
-}
 
-// MARK: - Pet Selector
-
-private struct PetSelectorView: View {
-    let pets: [Pet]
-    let selectedPetID: UUID?
-    let onSelect: (Pet) -> Void
-    let onRegisterTap: () -> Void
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                ForEach(pets) { pet in
-                    PetChip(pet: pet, isSelected: pet.id == selectedPetID) {
-                        onSelect(pet)
-                    }
-                }
-
-                Button(action: onRegisterTap) {
-                    Image(systemName: "plus")
-                        .font(.headline)
-                        .foregroundColor(AppColor.orange)
-                        .frame(width: 44, height: 44)
-                        .background(AppColor.orange.opacity(0.15))
-                        .clipShape(Circle())
-                }
+            Button(action: onReorderTap) {
+                Image(systemName: "arrow.up.arrow.down.circle")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(hasPets ? AppColor.orange : AppColor.orange.opacity(0.3))
             }
-            .padding(.vertical, 8)
-        }
-    }
-}
+            .disabled(hasPets == false)
+            .accessibilityLabel("순서 변경")
 
-private struct PetChip: View {
-    let pet: Pet
-    let isSelected: Bool
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 10) {
-                Image(systemName: "pawprint.fill")
-                    .foregroundColor(isSelected ? .white : AppColor.orange)
-
-                Text(pet.name)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(isSelected ? .white : .primary)
+            Button(action: onAddPet) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(AppColor.orange)
             }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 16)
-            .background(
-                Capsule()
-                    .fill(isSelected ? AppColor.orange : AppColor.lightGray)
-            )
+            .accessibilityLabel("반려동물 추가")
         }
     }
 }
@@ -190,100 +199,292 @@ private struct PetChip: View {
 private struct PetOverviewSection: View {
     let pet: Pet
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
-    ]
-
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 16) {
-            PetImageCard(pet: pet)
-
-            PetInfoCard(icon: "clock", title: "Age") {
-                InfoValueView(value: "\(pet.calculatedAge)", unit: "Years")
-            }
-
-            PetInfoCard(icon: "scalemass", title: "Weight") {
-                InfoValueView(value: weightValue, unit: "Kg")
-            }
-
-            PetInfoCard(icon: "pawprint", title: "Species") {
-                InfoValueView(value: pet.species, unit: pet.breed)
-            }
-
-            PetInfoCard(icon: "figure.stand", title: "Gender") {
-                InfoValueView(value: pet.gender, unit: pet.isNeutered ? "Neutered" : "Not neutered")
-            }
-
-            if let note = pet.existingConditions, note.isEmpty == false {
-                PetInfoCard(icon: "doc.text", title: "About") {
-                    Text(note)
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(4)
-                }
-                .gridCellColumns(2)
-            }
-        }
-    }
-
-    private var weightValue: String {
-        guard let weight = pet.weight else { return "-" }
-        return String(format: "%.1f", weight)
+        PetDetailCard(pet: pet)
     }
 }
 
-private struct PetImageCard: View {
+private struct PetDetailCard: View {
     let pet: Pet
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(AppColor.white)
-                .shadow(color: .black.opacity(0.07), radius: 10, x: 0, y: 10)
+        ZStack {
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [AppColor.peach, AppColor.orange.opacity(0.75)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .shadow(color: .black.opacity(0.15), radius: 18, x: 0, y: 14)
 
-            GeometryReader { proxy in
-                VStack {
-                    Spacer(minLength: 12)
+            VStack(alignment: .leading, spacing: 24) {
+                headerSection
+                detailPanel
+            }
+            .padding(24)
+        }
+        .frame(maxWidth: .infinity, minHeight: 360, alignment: .topLeading)
+    }
 
-                    petImage
-                        .frame(maxWidth: proxy.size.width * 0.8)
-                        .frame(maxHeight: proxy.size.height * 0.7)
+    private var headerSection: some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(pet.name)
+                    .appFont(26, weight: .bold)
+                    .foregroundStyle(AppColor.white)
 
-                    Spacer(minLength: 12)
+                Text(speciesLabel)
+                    .appFont(15, weight: .medium)
+                    .foregroundStyle(AppColor.white.opacity(0.85))
+
+                if let adoption = adoptionText {
+                    Label("함께한 지 \(adoption)", systemImage: "calendar")
+                        .appFont(13, weight: .semibold)
+                        .foregroundStyle(AppColor.white.opacity(0.85))
                 }
-                .frame(width: proxy.size.width, height: proxy.size.height)
+            }
+
+            Spacer()
+
+            PetHeroImageView(pet: pet)
+                .frame(width: 140, height: 140)
+        }
+    }
+
+    private var detailPanel: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            metricsRow
+
+            traitChips
+
+            specialNotesSection
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(AppColor.white.opacity(0.96))
+        )
+        .shadow(color: .black.opacity(0.12), radius: 14, x: 0, y: 8)
+    }
+
+    private var metricsRow: some View {
+        HStack(alignment: .center, spacing: 20) {
+            metricColumn(
+                title: "나이",
+                value: ageText,
+                subtitle: birthText.map { "생일 \($0)" }
+            )
+
+            Divider()
+                .frame(height: 50)
+                .overlay(AppColor.lightGray.opacity(0.6))
+
+            metricColumn(
+                title: "몸무게",
+                value: weightText ?? "-",
+                subtitle: "등록일 \(registrationText)"
+            )
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func metricColumn(title: String, value: String, subtitle: String?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .appFont(12, weight: .semibold)
+                .foregroundStyle(AppColor.subText)
+            Text(value)
+                .appFont(20, weight: .bold)
+                .foregroundStyle(AppColor.ink)
+            if let subtitle {
+                Text(subtitle)
+                    .appFont(11)
+                    .foregroundColor(.secondary)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 150, maxHeight: 170)
+    }
+
+    private var traitChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                infoChip(icon: "figure.stand", text: pet.gender)
+                infoChip(icon: "bandage.fill", text: pet.isNeutered ? "중성화 완료" : "중성화 미완료")
+                if let birth = birthText {
+                    infoChip(icon: "gift.fill", text: "생일 \(birth)")
+                }
+                if let weightText {
+                    infoChip(icon: "scalemass", text: weightText)
+                }
+                if let adoptionDDay = adoptionDDayChip {
+                    infoChip(icon: "calendar.badge.heart", text: adoptionDDay)
+                }
+                if let birthDDay = birthDDayChip {
+                    infoChip(icon: "calendar.badge.plus", text: birthDDay)
+                }
+            }
+            .padding(.vertical, 2)
+        }
     }
 
     @ViewBuilder
-    private var petImage: some View {
+    private var specialNotesSection: some View {
+        if let note = pet.existingConditions, note.isEmpty == false {
+            VStack(alignment: .leading, spacing: 10) {
+                Label("특이사항", systemImage: "doc.text")
+                    .appFont(14, weight: .semibold)
+                    .foregroundColor(AppColor.orange)
+
+                Text(note)
+                    .appFont(15)
+                    .foregroundColor(.secondary)
+                    .lineSpacing(4)
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(AppColor.lightGray.opacity(0.25))
+            )
+        }
+    }
+
+    private func infoChip(icon: String, text: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundStyle(AppColor.orange)
+            Text(text)
+                .appFont(13, weight: .medium)
+                .foregroundStyle(AppColor.ink)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            Capsule()
+                .fill(AppColor.lightGray)
+        )
+    }
+
+    private var ageText: String {
+        let years = pet.calculatedAge
+        return years > 0 ? "\(years)살" : "정보 없음"
+    }
+
+    private var weightText: String? {
+        guard let weight = pet.weight else { return nil }
+        return String(format: "%.1f", weight) + "kg"
+    }
+
+    private var birthText: String? {
+        pet.birthDate.map { PetDetailCard.dateFormatter.string(from: $0) }
+    }
+
+    private var adoptionText: String? {
+        guard let adoptionDate = pet.adoptionDate else { return nil }
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.year, .month]
+        formatter.unitsStyle = .full
+        formatter.maximumUnitCount = 1
+        return formatter.string(from: adoptionDate, to: Date())
+    }
+
+    private var registrationText: String {
+        PetDetailCard.dateFormatter.string(from: pet.registrationDate)
+    }
+
+    private var adoptionDDayChip: String? {
+        guard let adoptionDate = pet.adoptionDate else { return nil }
+        return Self.ddayChipText(for: adoptionDate, prefix: "입양")
+    }
+
+    private var birthDDayChip: String? {
+        guard let birthDate = pet.birthDate else { return nil }
+        return Self.ddayChipText(for: birthDate, prefix: "생일")
+    }
+
+    private var speciesLabel: String {
+        if let breed = pet.breed, breed.isEmpty == false {
+            return "\(pet.species) • \(breed)"
+        }
+        return pet.species
+    }
+
+    fileprivate static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy.MM.dd"
+        return formatter
+    }()
+
+    private static func ddayChipText(for date: Date, prefix: String) -> String? {
+        let days = daysFromToday(to: date)
+        guard abs(days) <= 10 else { return nil }
+        if days == 0 { return "\(prefix) D-Day" }
+        return days > 0 ? "\(prefix) D-\(days)" : "\(prefix) D+\(-days)"
+    }
+
+    private static func daysFromToday(to date: Date) -> Int {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Date())
+        let targetDay = calendar.startOfDay(for: date)
+        let components = calendar.dateComponents([.day], from: startOfToday, to: targetDay)
+        return components.day ?? 0
+    }
+}
+
+private struct PetHeroImageView: View {
+    let pet: Pet
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [AppColor.white.opacity(0.45), AppColor.peach.opacity(0.5)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+            heroImage
+                .frame(width: 120, height: 120)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .shadow(radius: 6, x: 0, y: 4)
+                .padding(12)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+    }
+
+    @ViewBuilder
+    private var heroImage: some View {
         if let url = resolvedImageURL {
             AsyncImage(url: url) { image in
                 image
                     .resizable()
-                    .scaledToFit()
+                    .scaledToFill()
             } placeholder: {
                 placeholder
             }
-        } else if let name = pet.profileImageName, UIImage(named: name) != nil {
+        } else if let name = pet.profileImageName,
+                  UIImage(named: name) != nil {
             Image(name)
                 .resizable()
-                .scaledToFit()
+                .scaledToFill()
         } else {
             placeholder
         }
     }
 
     private var placeholder: some View {
-        Image(systemName: "pawprint.circle.fill")
+        Image(systemName: "pawprint.circle")
             .resizable()
             .scaledToFit()
             .foregroundColor(AppColor.orange.opacity(0.35))
             .padding(18)
+            .background(AppColor.white.opacity(0.6))
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private var resolvedImageURL: URL? {
@@ -296,63 +497,79 @@ private struct PetImageCard: View {
     }
 }
 
-private struct PetInfoCard<Content: View>: View {
-    let icon: String
-    let title: String
-    let content: Content
-
-    init(icon: String, title: String, @ViewBuilder body: () -> Content) {
-        self.icon = icon
-        self.title = title
-        self.content = body()
-    }
+private struct PetOrderSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let pets: [Pet]
+    let initialOrder: [UUID]
+    let onComplete: ([UUID]) -> Void
+    @State private var items: [PetOrderItem] = []
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundColor(AppColor.orange)
-
-                Text(title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
+        NavigationStack {
+            List {
+                ForEach(items) { item in
+                    HStack {
+                        Text(item.name)
+                            .font(.body)
+                        Spacer()
+                        Text(item.species)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 6)
+                }
+                .onMove(perform: move)
             }
+            .listStyle(.insetGrouped)
+            .navigationTitle("펫 순서 정렬")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("취소") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("완료") {
+                        let newOrder = items.map(\.id)
+                        onComplete(newOrder)
+                        dismiss()
+                    }
+                    .disabled(items.isEmpty)
+                }
+            }
+            .environment(\.editMode, .constant(.active))
+        }
+        .presentationDetents([.medium, .large])
+        .onAppear(perform: loadItems)
+    }
 
-            HStack {
-                Spacer()
-                content
-                Spacer()
+    private func loadItems() {
+        var order = initialOrder
+        let ids = pets.map(\.id)
+        if order.isEmpty {
+            order = ids
+        } else {
+            order = order.filter(ids.contains)
+            for id in ids where order.contains(id) == false {
+                order.append(id)
             }
         }
-        .padding(20)
-        .frame(maxWidth: .infinity, minHeight: 150)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(AppColor.white)
-                .shadow(color: .black.opacity(0.07), radius: 10, x: 0, y: 10)
-        )
+
+        items = order.compactMap { id in
+            guard let pet = pets.first(where: { $0.id == id }) else { return nil }
+            return PetOrderItem(id: pet.id, name: pet.name, species: pet.species)
+        }
+    }
+
+    private func move(from source: IndexSet, to destination: Int) {
+        items.move(fromOffsets: source, toOffset: destination)
     }
 }
 
-private struct InfoValueView: View {
-    let value: String
-    let unit: String?
-
-    var body: some View {
-        VStack(spacing: 6) {
-            Text(value)
-                .font(.system(size: 30, weight: .bold))
-                .foregroundColor(.primary)
-
-            if let unit, unit.isEmpty == false {
-                Text(unit)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .multilineTextAlignment(.center)
-    }
+private struct PetOrderItem: Identifiable, Equatable {
+    let id: UUID
+    let name: String
+    let species: String
 }
 
 // MARK: - Empty State
@@ -488,6 +705,13 @@ private final class PreviewAuthUseCase: AuthUseCaseInterface {
 
     func restoreSession() async throws -> User? {
         subject.value
+    }
+
+    func updatePetOrder(_ order: [UUID]) async throws {
+        if var current = subject.value {
+            current.petOrder = order
+            subject.send(current)
+        }
     }
 }
 

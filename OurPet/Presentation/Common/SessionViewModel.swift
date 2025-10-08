@@ -158,6 +158,17 @@ final class SessionViewModel: ObservableObject {
         petUseCase.removePet(with: id)
     }
 
+    func updatePetOrder(_ order: [UUID]) {
+        Task {
+            do {
+                try await authUseCase.updatePetOrder(order)
+                Log.info("펫 정렬 순서 업데이트 완료", tag: "Session")
+            } catch {
+                Log.error("펫 정렬 순서 업데이트 실패: \(error.localizedDescription)", tag: "Session")
+            }
+        }
+    }
+
     func clearPets() {
         petUseCase.clearAllPets()
     }
