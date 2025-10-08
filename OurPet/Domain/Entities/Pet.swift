@@ -29,7 +29,7 @@ struct Pet: Identifiable, Codable, Equatable {
     var breed: String?
     var age: Int
     var gender: String
-    var isNeutered: Bool
+    var isNeutered: Bool    // 중성화 여부
     var weight: Double?
     var profileImageName: String?
     var existingConditions: String?

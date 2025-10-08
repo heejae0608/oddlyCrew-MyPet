@@ -7,14 +7,32 @@
 
 import SwiftUI
 
+struct UpdateHistoryToChat: Equatable {
+    let messages: [ChatMessage]
+    let selectedPet: Pet
+}
+
 struct HistoryView: View {
     @ObservedObject var viewModel: HistoryViewModel
+    @ObservedObject var chatViewModel: ChatViewModel
     @EnvironmentObject private var session: SessionViewModel
     @State private var showingPetSelection = false
     @State private var showingHistoryDetailView = false
     @State private var selectedConversation: ChatConversation? = nil
     @State private var expandedConversationIDs: Set<UUID> = []
-
+    @State private var updateData: UpdateHistoryToChat = UpdateHistoryToChat(
+        messages: [],
+        selectedPet: Pet(
+            userId: UUID(),
+            name: "",
+            species: "",
+            age: 0,
+            gender: "",
+            isNeutered: false
+        )
+    )
+    @Binding var selectedTab: Int
+    
     private var groupedHistory: [(String, [ChatConversation])] {
         let calendar = Calendar.current
         let formatter = DateFormatter()
@@ -69,9 +87,14 @@ struct HistoryView: View {
             .navigationDestination(
                 item: $selectedConversation,
                 destination: { conversation in
-                    HistoryDetailView(
-                        conversation: conversation
-                    )
+                    if let selectedPet = viewModel.selectedPet {
+                        HistoryDetailView(
+                            conversation: conversation,
+                            updateData: $updateData,
+                            selectedTab: $selectedTab,
+                            selectedPet: selectedPet
+                        )
+                    }
                 }
             )
             .sheet(isPresented: $showingPetSelection) {
@@ -81,6 +104,9 @@ struct HistoryView: View {
                 ) { pet in
                     viewModel.selectedPet = pet
                 }
+            }
+            .onChange(of: updateData) {
+                chatViewModel.updateFromHistoryDetailView(updateData: updateData)
             }
         }
     }

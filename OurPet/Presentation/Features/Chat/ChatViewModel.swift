@@ -66,6 +66,11 @@ final class ChatViewModel: ObservableObject {
             }
         }
     }
+    
+    func updateFromHistoryDetailView(updateData: UpdateHistoryToChat) {
+        self.messages = updateData.messages
+        self.selectedPet = updateData.selectedPet
+    }
 
     func sendMessage() {
         let trimmed = messageText.trimmingCharacters(in: .whitespacesAndNewlines)

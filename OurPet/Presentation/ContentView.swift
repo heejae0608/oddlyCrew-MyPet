@@ -32,6 +32,7 @@ struct MainTabView: View {
     @StateObject private var chatViewModel: ChatViewModel
     @StateObject private var historyViewModel: HistoryViewModel
     @StateObject private var settingsViewModel: SettingsViewModel
+    @State private var selectedTab = 0
 
     init(container: DIContainer, session: SessionViewModel) {
         _session = ObservedObject(initialValue: session)
@@ -41,20 +42,26 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             HomeView()
                 .tabItem {
                     Image(systemName: "house.fill")
                     Text("홈")
                 }
                 .environmentObject(session)
+                .tag(0)
 
-            HistoryView(viewModel: historyViewModel)
-                .tabItem {
-                    Image(systemName: "clock.fill")
-                    Text("히스토리")
-                }
-                .environmentObject(session)
+            HistoryView(
+                viewModel: historyViewModel,
+                chatViewModel: chatViewModel,
+                selectedTab: $selectedTab
+            )
+            .tabItem {
+                Image(systemName: "clock.fill")
+                Text("히스토리")
+            }
+            .environmentObject(session)
+            .tag(1)
 
             ChatView(viewModel: chatViewModel)
                 .tabItem {
@@ -62,6 +69,7 @@ struct MainTabView: View {
                     Text("상담")
                 }
                 .environmentObject(session)
+                .tag(2)
 
             SettingsView(viewModel: settingsViewModel)
                 .tabItem {
@@ -69,6 +77,7 @@ struct MainTabView: View {
                     Text("설정")
                 }
                 .environmentObject(session)
+                .tag(3)
         }
         .tint(AppColor.orange)
     }
