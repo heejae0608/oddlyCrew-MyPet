@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import UIKit
 import Combine
 
 struct HomeView: View {
@@ -31,37 +30,22 @@ struct HomeView: View {
         return session.pets.sorted { $0.registrationDate > $1.registrationDate }
     }
 
-    private var topSafeAreaInset: CGFloat {
-        UIApplication.shared.connectedScenes
-            .compactMap { ($0 as? UIWindowScene)?.keyWindow?.safeAreaInsets.top }
-            .max() ?? 0
-    }
-
     private let tipProvider = PetCareTipProvider.shared
     @State private var dailyTip: DailyTip?
+    private var hasPets: Bool { session.pets.isEmpty == false }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AppColor.lightGray
                     .ignoresSafeArea()
 
                 ScrollView(.vertical, showsIndicators: false) {
-                    LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                        Section {
-                            if session.pets.isEmpty {
-                                HomeEmptyState {
-                                    showingPetRegistration = true
-                                }
-                                .padding(.horizontal, 32)
-                                .padding(.top, 120)
-                                .padding(.bottom, 80)
-                                .frame(maxWidth: .infinity)
-                            } else {
-                                VStack(alignment: .leading, spacing: 24) {
-                                    if let dailyTip {
-                                        TipCard(tip: dailyTip)
-                                    }
+                    if hasPets {
+                        VStack(alignment: .leading, spacing: 24) {
+                            if let dailyTip {
+                                TipCard(tip: dailyTip)
+                            }
 
                             ForEach(sortedPets) { pet in
                                 PetOverviewSection(
@@ -69,24 +53,38 @@ struct HomeView: View {
                                     onEdit: { editingPet = $0 }
                                 )
                             }
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.top, 32)
-                                .padding(.bottom, 10)
-                            }
-                        } header: {
-                            HomeTopBar(
-                                topInset: topSafeAreaInset,
-                                hasPets: session.pets.isEmpty == false,
-                                onAddTap: { showingPetRegistration = true },
-                                onReorderTap: openReorderSheet
-                            )
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 24)
+                        .padding(.bottom, 32)
+                    } else {
+                        HomeEmptyState {
+                            showingPetRegistration = true
+                        }
+                        .padding(.horizontal, 32)
+                        .padding(.top, 120)
+                        .padding(.bottom, 80)
+                        .frame(maxWidth: .infinity)
                     }
                 }
-                .ignoresSafeArea(.container, edges: .top)
             }
-            .navigationBarHidden(true)
+            .navigationTitle("OurPet")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    if hasPets {
+                        Button(action: openReorderSheet) {
+                            Image(systemName: "arrow.up.arrow.down")
+                        }
+                    }
+
+                    Button {
+                        showingPetRegistration = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
         }
         .sheet(isPresented: $showingPetRegistration) {
             PetRegistrationView()
@@ -110,7 +108,7 @@ struct HomeView: View {
     }
 
     private func openReorderSheet() {
-        guard session.pets.isEmpty == false else { return }
+        guard hasPets else { return }
         showingOrderSheet = true
     }
 
