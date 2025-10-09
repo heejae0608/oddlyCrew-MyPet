@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1B139A352E96B9FC0022BD9C /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 1B139A342E96B9FC0022BD9C /* FirebaseStorage */; };
+		1B139A372E96B9FC0022BD9C /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = 1B139A362E96B9FC0022BD9C /* FirebaseStorageCombine-Community */; };
 		1BFB10012E7F000100ABCD12 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1BFB10F02E7F000100ABCD12 /* FirebaseCore */; };
 		1BFB10022E7F000100ABCD12 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 1BFB10F12E7F000100ABCD12 /* FirebaseAuth */; };
 		1BFB10032E7F000100ABCD12 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 1BFB10F22E7F000100ABCD12 /* FirebaseFirestore */; };
@@ -59,6 +61,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				1BFB10022E7F000100ABCD12 /* FirebaseAuth in Frameworks */,
+				1B139A352E96B9FC0022BD9C /* FirebaseStorage in Frameworks */,
+				1B139A372E96B9FC0022BD9C /* FirebaseStorageCombine-Community in Frameworks */,
 				1BFB10012E7F000100ABCD12 /* FirebaseCore in Frameworks */,
 				1BFB10032E7F000100ABCD12 /* FirebaseFirestore in Frameworks */,
 			);
@@ -124,6 +128,8 @@
 				1BFB10F02E7F000100ABCD12 /* FirebaseCore */,
 				1BFB10F12E7F000100ABCD12 /* FirebaseAuth */,
 				1BFB10F22E7F000100ABCD12 /* FirebaseFirestore */,
+				1B139A342E96B9FC0022BD9C /* FirebaseStorage */,
+				1B139A362E96B9FC0022BD9C /* FirebaseStorageCombine-Community */,
 			);
 			productName = OurPet;
 			productReference = 1B9547372E7AEAEB003CE9C4 /* OurPet.app */;
@@ -634,6 +640,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		1B139A342E96B9FC0022BD9C /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B8B53B82E7E951E00492716 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		1B139A362E96B9FC0022BD9C /* FirebaseStorageCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B8B53B82E7E951E00492716 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseStorageCombine-Community";
+		};
 		1BFB10F02E7F000100ABCD12 /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 1B8B53B82E7E951E00492716 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

@@ -70,13 +70,22 @@ struct PetRegistrationView: View {
 
     private func handleSubmit() {
         guard formData.isValid else { return }
+        var workingForm = formData
+
+        if workingForm.profileImageData == nil,
+           let image = workingForm.profileImage {
+            workingForm.setImage(image)
+        }
+
+        formData = workingForm
 
         if var pet = existingPet {
-            pet = formData.applying(to: pet)
+            pet = workingForm.applying(to: pet)
             session.updatePet(pet)
         } else {
             let ownerId = session.currentUser?.id ?? UUID()
-            let newPet = formData.makePet(userId: ownerId)
+            var newPet = workingForm.makePet(userId: ownerId)
+            newPet.profileImageData = workingForm.profileImageData
             session.addPet(newPet)
         }
 

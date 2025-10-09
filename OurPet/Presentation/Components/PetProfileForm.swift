@@ -157,7 +157,7 @@ struct PetProfileForm: View {
                 if let data = try? await newValue.loadTransferable(type: Data.self),
                    let uiImage = UIImage(data: data) {
                     await MainActor.run {
-                        self.data.profileImage = uiImage
+                        self.data.setImage(uiImage)
                     }
                 }
             }
@@ -182,13 +182,16 @@ struct PetProfileForm: View {
                         .scaledToFill()
                         .frame(width: 120, height: 120)
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                } else {
-                    Image("OurPetLogo")
-                        .renderingMode(.template)
+                } else if let base64 = data.profileImageData,
+                          let decoded = Data(base64Encoded: base64),
+                          let image = UIImage(data: decoded) {
+                    Image(uiImage: image)
                         .resizable()
-                        .scaledToFit()
-                        .frame(width: 100, height: 100)
-                        .foregroundColor(AppColor.orange)
+                        .scaledToFill()
+                        .frame(width: 120, height: 120)
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                } else {
+                    placeholderImage
                 }
             }
 
@@ -214,6 +217,15 @@ struct PetProfileForm: View {
 
             content()
         }
+    }
+
+    private var placeholderImage: some View {
+        Image("OurPetLogo")
+            .renderingMode(.template)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 100, height: 100)
+            .foregroundColor(AppColor.orange)
     }
 }
 

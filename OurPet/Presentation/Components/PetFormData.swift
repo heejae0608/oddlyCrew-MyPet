@@ -13,6 +13,7 @@ struct PetFormData {
     var weight: String = ""
     var existingConditions: String = ""
     var profileImage: UIImage?
+    var profileImageData: String?
     var birthDate: Date = Date()
     var adoptionDate: Date = Date()
 
@@ -30,6 +31,11 @@ struct PetFormData {
         existingConditions = pet.existingConditions ?? ""
         birthDate = pet.birthDate ?? Date()
         adoptionDate = pet.adoptionDate ?? pet.birthDate ?? Date()
+        profileImageData = pet.profileImageData
+        if let data = pet.decodedProfileImageData,
+           let image = UIImage(data: data) {
+            profileImage = image
+        }
     }
 
     var isValid: Bool {
@@ -59,7 +65,7 @@ struct PetFormData {
             gender: gender,
             isNeutered: isNeutered,
             weight: finalWeight,
-            profileImageName: nil,
+            profileImageData: profileImageData,
             existingConditions: sanitizedConditions.isEmpty ? nil : sanitizedConditions,
             birthDate: normalizedBirth,
             adoptionDate: normalizedAdoption
@@ -88,8 +94,15 @@ struct PetFormData {
         updated.existingConditions = sanitizedConditions.isEmpty ? nil : sanitizedConditions
         updated.birthDate = normalizedBirth
         updated.adoptionDate = normalizedAdoption
+        updated.profileImageData = profileImageData
 
         return updated
+    }
+
+    mutating func setImage(_ image: UIImage) {
+        let resized = image.resizedToFit(maxDimension: 512)
+        profileImage = resized
+        profileImageData = resized.jpegData(compressionQuality: 0.7)?.base64EncodedString()
     }
 
     private static func format(weight: Double) -> String {
@@ -97,5 +110,20 @@ struct PetFormData {
         formatter.minimumFractionDigits = 0
         formatter.maximumFractionDigits = 1
         return formatter.string(from: NSNumber(value: weight)) ?? String(weight)
+    }
+}
+
+private extension UIImage {
+    func resizedToFit(maxDimension: CGFloat) -> UIImage {
+        let largestSide = max(size.width, size.height)
+        guard largestSide > maxDimension else { return self }
+
+        let scale = maxDimension / largestSide
+        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
+
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        return renderer.image { _ in
+            self.draw(in: CGRect(origin: .zero, size: newSize))
+        }
     }
 }

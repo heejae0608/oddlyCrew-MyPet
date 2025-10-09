@@ -30,7 +30,7 @@ struct Pet: Identifiable, Codable, Equatable {
     var gender: String
     var isNeutered: Bool
     var weight: Double?
-    var profileImageName: String?
+    var profileImageData: String?
     var existingConditions: String?
     var birthDate: Date?
     var adoptionDate: Date?
@@ -50,7 +50,7 @@ struct Pet: Identifiable, Codable, Equatable {
         gender: String,
         isNeutered: Bool,
         weight: Double? = nil,
-        profileImageName: String? = nil,
+        profileImageData: String? = nil,
         existingConditions: String? = nil,
         birthDate: Date? = nil,
         adoptionDate: Date? = nil,
@@ -68,7 +68,7 @@ struct Pet: Identifiable, Codable, Equatable {
         self.gender = gender
         self.isNeutered = isNeutered
         self.weight = weight
-        self.profileImageName = profileImageName
+        self.profileImageData = profileImageData
         self.existingConditions = existingConditions
         self.birthDate = birthDate
         self.adoptionDate = adoptionDate
@@ -91,6 +91,13 @@ extension Pet {
         }
         return max(0, legacyAge ?? 0)
     }
+
+    var decodedProfileImageData: Data? {
+        guard let profileImageData,
+              let data = Data(base64Encoded: profileImageData, options: .ignoreUnknownCharacters) else { return nil }
+        return data
+    }
+
 }
 
 extension Pet {
@@ -103,7 +110,7 @@ extension Pet {
         case gender
         case isNeutered
         case weight
-        case profileImageName
+        case profileImageData
         case existingConditions
         case birthDate
         case adoptionDate
@@ -125,7 +132,7 @@ extension Pet {
         gender = try container.decode(String.self, forKey: .gender)
         isNeutered = try container.decode(Bool.self, forKey: .isNeutered)
         weight = try container.decodeIfPresent(Double.self, forKey: .weight)
-        profileImageName = try container.decodeIfPresent(String.self, forKey: .profileImageName)
+        profileImageData = try container.decodeIfPresent(String.self, forKey: .profileImageData)
         existingConditions = try container.decodeIfPresent(String.self, forKey: .existingConditions)
         birthDate = try container.decodeIfPresent(Date.self, forKey: .birthDate)
         adoptionDate = try container.decodeIfPresent(Date.self, forKey: .adoptionDate)
@@ -147,7 +154,7 @@ extension Pet {
         try container.encode(gender, forKey: .gender)
         try container.encode(isNeutered, forKey: .isNeutered)
         try container.encodeIfPresent(weight, forKey: .weight)
-        try container.encodeIfPresent(profileImageName, forKey: .profileImageName)
+        try container.encodeIfPresent(profileImageData, forKey: .profileImageData)
         try container.encodeIfPresent(existingConditions, forKey: .existingConditions)
         try container.encodeIfPresent(birthDate, forKey: .birthDate)
         try container.encodeIfPresent(adoptionDate, forKey: .adoptionDate)
