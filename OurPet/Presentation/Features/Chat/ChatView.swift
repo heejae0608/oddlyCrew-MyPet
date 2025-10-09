@@ -266,7 +266,7 @@ private struct PetSelectionView: View {
                             Text(pet.name)
                                 .font(.headline)
                                 .foregroundColor(AppColor.ink)
-                            Text("\(pet.species) • \(pet.age)살")
+                            Text("\(pet.species) • \(pet.calculatedAge)살")
                                 .font(.caption)
                                 .foregroundColor(.gray)
                         }

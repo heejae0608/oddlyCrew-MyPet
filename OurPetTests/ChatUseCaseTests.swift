@@ -12,7 +12,6 @@ struct ChatUseCaseTests {
             name: "초코",
             species: "강아지",
             breed: "포메라니안",
-            age: 3,
             gender: "수컷",
             isNeutered: true,
             weight: 4.2
@@ -26,7 +25,6 @@ struct ChatUseCaseTests {
             name: "나비",
             species: "고양이",
             breed: "코리안숏헤어",
-            age: 2,
             gender: "암컷",
             isNeutered: false,
             weight: 3.1

@@ -21,6 +21,7 @@ final class SessionViewModel: ObservableObject {
     @Published private(set) var appState: AppState = .default
     @Published var loadingMessage: String = "잠시만 기다려주세요..."
     @Published private(set) var flow: SessionFlow = .splash
+    @Published private(set) var petDisplayOrder: [UUID] = []
 
 
     private let authUseCase: AuthUseCaseInterface
@@ -58,6 +59,7 @@ final class SessionViewModel: ObservableObject {
                 }
                 self.appState = .default
                 self.updateFlow(for: user)
+                self.syncPetOrder(with: self.pets, persistChanges: false)
             }
             .store(in: &cancellables)
 
@@ -67,8 +69,11 @@ final class SessionViewModel: ObservableObject {
                 guard let self else { return }
                 Log.debug("세션 펫 갱신: \(pets.count)마리", tag: "Session")
 
-                // Pet 데이터 그대로 유지 - 대화 세션 건드리지 않음
+                let previousIDs = Set(self.pets.map(\.id))
+                let newIDs = Set(pets.map(\.id))
                 self.pets = pets
+                let idsChanged = previousIDs != newIDs
+                self.syncPetOrder(with: pets, persistChanges: idsChanged && self.isRestoringSession == false)
             }
             .store(in: &cancellables)
     }
@@ -119,6 +124,33 @@ final class SessionViewModel: ObservableObject {
         }
     }
 
+    func deleteAccount() {
+        loadingMessage = "계정을 삭제하는 중입니다..."
+        appState = .loading
+        isRestoringSession = true
+        Log.info("세션 계정 삭제 플로우 시작", tag: "Session")
+        Task {
+            do {
+                try await authUseCase.deleteAccount()
+                await MainActor.run {
+                    self.currentUser = nil
+                    self.pets = []
+                    self.petUseCase.clearAllPets()
+                    self.appState = .default
+                    self.flow = .login
+                    self.isRestoringSession = false
+                }
+                Log.info("세션 계정 삭제 성공", tag: "Session")
+            } catch {
+                await MainActor.run {
+                    self.appState = .error(error.localizedDescription)
+                    self.isRestoringSession = false
+                }
+                Log.error("세션 계정 삭제 실패: \(error.localizedDescription)", tag: "Session")
+            }
+        }
+    }
+
     func addPet(_ pet: Pet) {
         petUseCase.addPet(pet)
     }
@@ -129,6 +161,13 @@ final class SessionViewModel: ObservableObject {
 
     func removePet(with id: UUID) {
         petUseCase.removePet(with: id)
+    }
+
+    func reorderPets(with order: [UUID]) {
+        let sanitized = sanitize(order: order, with: pets)
+        guard sanitized != petDisplayOrder else { return }
+        petDisplayOrder = sanitized
+        persistPetOrderIfNeeded(sanitized)
     }
 
     func clearPets() {
@@ -170,5 +209,68 @@ final class SessionViewModel: ObservableObject {
 
     private func updateFlow(for user: User?) {
         flow = user == nil ? .login : .main
+    }
+
+    private func syncPetOrder(with pets: [Pet], persistChanges: Bool) {
+        let ids = pets.map(\.id)
+
+        guard ids.isEmpty == false else {
+            if petDisplayOrder.isEmpty == false {
+                petDisplayOrder = []
+            }
+            if persistChanges {
+                persistPetOrderIfNeeded([])
+            }
+            return
+        }
+
+        var resolvedOrder = petDisplayOrder
+
+        if resolvedOrder.isEmpty,
+           let storedOrder = currentUser?.petOrder,
+           storedOrder.isEmpty == false {
+            resolvedOrder = storedOrder
+        }
+
+        if resolvedOrder.isEmpty {
+            resolvedOrder = ids
+        } else {
+            resolvedOrder = resolvedOrder.filter(ids.contains)
+            for id in ids where resolvedOrder.contains(id) == false {
+                resolvedOrder.append(id)
+            }
+        }
+
+        if resolvedOrder != petDisplayOrder {
+            petDisplayOrder = resolvedOrder
+        }
+
+        if persistChanges {
+            persistPetOrderIfNeeded(resolvedOrder)
+        }
+    }
+
+    private func sanitize(order: [UUID], with pets: [Pet]) -> [UUID] {
+        let ids = pets.map(\.id)
+        var sanitized = order.filter(ids.contains)
+        for id in ids where sanitized.contains(id) == false {
+            sanitized.append(id)
+        }
+        return sanitized
+    }
+
+    private func persistPetOrderIfNeeded(_ order: [UUID]) {
+        guard isRestoringSession == false else { return }
+        guard currentUser != nil else { return }
+        guard order != currentUser?.petOrder else { return }
+
+        Task {
+            do {
+                try await authUseCase.updatePetOrder(order)
+                Log.info("펫 정렬 순서 업데이트 완료", tag: "Session")
+            } catch {
+                Log.error("펫 정렬 순서 업데이트 실패: \(error.localizedDescription)", tag: "Session")
+            }
+        }
     }
 }

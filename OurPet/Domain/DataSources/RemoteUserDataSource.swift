@@ -10,4 +10,5 @@ import Foundation
 protocol RemoteUserDataSource {
     func fetchUser(uid: String) async throws -> User?
     func upsertUser(_ user: User) async throws
+    func deleteUser(uid: String) async throws
 }

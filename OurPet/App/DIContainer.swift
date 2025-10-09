@@ -51,6 +51,8 @@ final class DIContainer {
         AuthUseCase(
             userRepository: userRepository,
             petRepository: petRepository,
+            conversationRepository: conversationRepository,
+            chatConversationRepository: chatConversationRepository,
             firebaseAuthService: firebaseAuthService,
             remoteUserDataSource: remoteUserDataSource
         )
@@ -97,7 +99,11 @@ final class DIContainer {
     }
 
     @MainActor func makeSettingsViewModel(session: SessionViewModel) -> SettingsViewModel {
-        SettingsViewModel(session: session, chatUseCase: makeChatUseCase())
+        SettingsViewModel(
+            session: session,
+            conversationRepository: conversationRepository,
+            chatConversationRepository: chatConversationRepository
+        )
     }
 }
 

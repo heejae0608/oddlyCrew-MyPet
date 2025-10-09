@@ -85,6 +85,26 @@ final class FirebaseAuthService: FirebaseAuthServiceProtocol {
         }
     }
 
+    func deleteAccount() async throws {
+        Log.info("FirebaseAuth 계정 삭제 시도", tag: "FirebaseAuth")
+        guard let user = Auth.auth().currentUser else {
+            Log.warning("계정 삭제 시 currentUser가 없습니다", tag: "FirebaseAuth")
+            return
+        }
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            user.delete { error in
+                if let error {
+                    Log.error("FirebaseAuth 계정 삭제 실패: \(error.localizedDescription)", tag: "FirebaseAuth")
+                    continuation.resume(throwing: error)
+                } else {
+                    Log.info("FirebaseAuth 계정 삭제 완료", tag: "FirebaseAuth")
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
     private func signIn(with credential: AuthCredential) async throws -> AuthDataResult {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<AuthDataResult, Error>) in
             Auth.auth().signIn(with: credential) { authResult, error in

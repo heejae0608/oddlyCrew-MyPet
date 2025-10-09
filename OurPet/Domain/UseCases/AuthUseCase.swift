@@ -16,11 +16,15 @@ protocol AuthUseCaseInterface {
     func signInWithApple(idToken: String, nonce: String, name: String?, email: String?) async throws
     func logout() async throws
     func restoreSession() async throws -> User?
+    func deleteAccount() async throws
+    func updatePetOrder(_ order: [UUID]) async throws
 }
 
 final class AuthUseCase: AuthUseCaseInterface {
     private let userRepository: UserRepositoryInterface
     private let petRepository: PetRepositoryInterface
+    private let conversationRepository: ConversationRepositoryInterface
+    private let chatConversationRepository: ChatConversationRepositoryInterface
     private let firebaseAuthService: FirebaseAuthServiceProtocol
     private let remoteUserDataSource: RemoteUserDataSource
     private let logTag = "AuthUseCase"
@@ -28,11 +32,15 @@ final class AuthUseCase: AuthUseCaseInterface {
     init(
         userRepository: UserRepositoryInterface,
         petRepository: PetRepositoryInterface,
+        conversationRepository: ConversationRepositoryInterface,
+        chatConversationRepository: ChatConversationRepositoryInterface,
         firebaseAuthService: FirebaseAuthServiceProtocol,
         remoteUserDataSource: RemoteUserDataSource
     ) {
         self.userRepository = userRepository
         self.petRepository = petRepository
+        self.conversationRepository = conversationRepository
+        self.chatConversationRepository = chatConversationRepository
         self.firebaseAuthService = firebaseAuthService
         self.remoteUserDataSource = remoteUserDataSource
     }
@@ -152,6 +160,62 @@ final class AuthUseCase: AuthUseCaseInterface {
         return nil
     }
 
+    func deleteAccount() async throws {
+        guard let user = currentUser else {
+            Log.warning("삭제할 사용자 정보가 없습니다", tag: logTag)
+            throw NSError(domain: "AuthUseCase", code: -1, userInfo: [NSLocalizedDescriptionKey: "삭제할 계정이 없습니다."])
+        }
+
+        Log.info("계정 삭제 시도: \(user.appleUserID)", tag: logTag)
+
+        let pets = petRepository.pets
+
+        for pet in pets {
+            do {
+                let chatConversations = try await chatConversationRepository.getConversations(for: pet.id)
+                for conversation in chatConversations {
+                    try await chatConversationRepository.deleteConversation(id: conversation.id)
+                }
+            } catch {
+                Log.warning("채팅 대화 삭제 실패 (petId: \(pet.id.uuidString)): \(error.localizedDescription)", tag: logTag)
+            }
+
+            do {
+                let legacyConversations = try await conversationRepository.getConversations(for: pet.id)
+                for conversation in legacyConversations {
+                    try await conversationRepository.deleteConversation(id: conversation.id)
+                }
+            } catch {
+                Log.warning("레거시 대화 삭제 실패 (petId: \(pet.id.uuidString)): \(error.localizedDescription)", tag: logTag)
+            }
+
+            do {
+                try await petRepository.removePet(with: pet.id)
+            } catch {
+                Log.warning("펫 삭제 실패 (petId: \(pet.id.uuidString)): \(error.localizedDescription)", tag: logTag)
+            }
+        }
+
+        petRepository.clearAllPets()
+
+        do {
+            try await remoteUserDataSource.deleteUser(uid: user.appleUserID)
+        } catch {
+            Log.warning("Firestore 사용자 삭제 실패: \(error.localizedDescription)", tag: logTag)
+            throw error
+        }
+
+        do {
+            try await firebaseAuthService.deleteAccount()
+        } catch {
+            Log.warning("FirebaseAuth 계정 삭제 실패: \(error.localizedDescription)", tag: logTag)
+            throw error
+        }
+
+        userRepository.logout()
+        Log.info("계정 삭제 완료", tag: logTag)
+    }
+
     private func resetChatSessionsIfNeeded() async {
         let pets = petRepository.pets
         guard pets.isEmpty == false else { return }
@@ -169,6 +233,26 @@ final class AuthUseCase: AuthUseCaseInterface {
             } catch {
                 Log.warning("펫 '\(pet.name)' 세션 초기화 실패: \(error.localizedDescription)", tag: logTag)
             }
+        }
+    }
+
+    func updatePetOrder(_ order: [UUID]) async throws {
+        guard var user = userRepository.currentUser else {
+            Log.warning("펫 순서를 저장할 사용자 정보가 없습니다", tag: logTag)
+            return
+        }
+
+        user.petOrder = order
+
+        do {
+            try await remoteUserDataSource.upsertUser(user)
+            userRepository.updateUser { storedUser in
+                storedUser.petOrder = order
+            }
+            Log.info("펫 정렬 순서 Firestore 반영 완료", tag: logTag)
+        } catch {
+            Log.error("펫 정렬 순서 저장 실패: \(error.localizedDescription)", tag: logTag)
+            throw error
         }
     }
 }

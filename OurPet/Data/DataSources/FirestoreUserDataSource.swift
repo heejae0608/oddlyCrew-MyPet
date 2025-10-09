@@ -57,4 +57,13 @@ final class FirestoreUserDataSource: RemoteUserDataSource {
             .setData(jsonObject, merge: true)
         Log.info("Firestore upsertUser 완료: \(user.appleUserID)", tag: "Firestore")
     }
+
+    func deleteUser(uid: String) async throws {
+        Log.debug("Firestore deleteUser 시작: \(uid)", tag: "Firestore")
+        try await database
+            .collection(collectionName)
+            .document(uid)
+            .delete()
+        Log.info("Firestore deleteUser 완료: \(uid)", tag: "Firestore")
+    }
 }

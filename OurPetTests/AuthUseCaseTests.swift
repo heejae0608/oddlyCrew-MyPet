@@ -4,12 +4,18 @@ import Testing
 struct AuthUseCaseTests {
     @Test func signInCreatesUserWhenRemoteMissing() async throws {
         let repository = UserRepository()
+        let petRepository = StubPetRepository()
+        let conversationRepository = StubConversationRepository()
+        let chatConversationRepository = StubChatConversationRepository()
         let firebase = StubFirebaseAuthService(
             userInfo: FirebaseUserInfo(uid: "firebase-1", name: "Apple User", email: "apple@example.com")
         )
         let remote = StubRemoteUserDataSource()
         let useCase = AuthUseCase(
             userRepository: repository,
+            petRepository: petRepository,
+            conversationRepository: conversationRepository,
+            chatConversationRepository: chatConversationRepository,
             firebaseAuthService: firebase,
             remoteUserDataSource: remote
         )
@@ -25,9 +31,11 @@ struct AuthUseCaseTests {
     }
 
     @Test func signInUpdatesExistingRemoteUser() async throws {
-        var existing = User(appleUserID: "firebase-2", name: "Old Name", email: "old@example.com")
-        existing.pets = [.sampleDog]
+        let existing = User(appleUserID: "firebase-2", name: "Old Name", email: "old@example.com")
         let repository = UserRepository()
+        let petRepository = StubPetRepository()
+        let conversationRepository = StubConversationRepository()
+        let chatConversationRepository = StubChatConversationRepository()
         let firebase = StubFirebaseAuthService(
             userInfo: FirebaseUserInfo(uid: "firebase-2", name: "Apple User", email: "apple@example.com")
         )
@@ -36,6 +44,9 @@ struct AuthUseCaseTests {
 
         let useCase = AuthUseCase(
             userRepository: repository,
+            petRepository: petRepository,
+            conversationRepository: conversationRepository,
+            chatConversationRepository: chatConversationRepository,
             firebaseAuthService: firebase,
             remoteUserDataSource: remote
         )
@@ -45,17 +56,22 @@ struct AuthUseCaseTests {
         let user = repository.currentUser
         #expect(user?.name == "새 이름")
         #expect(user?.email == "apple@example.com")
-        #expect(user?.pets == [.sampleDog])
         #expect(remote.upsertCallCount == 1)
     }
 
     @Test func logoutClearsRepositoryAndCallsFirebase() async throws {
         let repository = UserRepository()
         repository.login(user: User(appleUserID: "firebase-3", name: "사용자"))
+        let petRepository = StubPetRepository()
+        let conversationRepository = StubConversationRepository()
+        let chatConversationRepository = StubChatConversationRepository()
         let firebase = StubFirebaseAuthService()
         let remote = StubRemoteUserDataSource()
         let useCase = AuthUseCase(
             userRepository: repository,
+            petRepository: petRepository,
+            conversationRepository: conversationRepository,
+            chatConversationRepository: chatConversationRepository,
             firebaseAuthService: firebase,
             remoteUserDataSource: remote
         )
@@ -69,6 +85,9 @@ struct AuthUseCaseTests {
     @Test func restoreSessionLoadsExistingRemoteUser() async throws {
         let existing = User(appleUserID: "firebase-4", name: "기존 사용자", email: "existing@example.com")
         let repository = UserRepository()
+        let petRepository = StubPetRepository()
+        let conversationRepository = StubConversationRepository()
+        let chatConversationRepository = StubChatConversationRepository()
         let firebase = StubFirebaseAuthService(
             userInfo: FirebaseUserInfo(uid: "firebase-4", name: "기존", email: "existing@example.com")
         )
@@ -78,6 +97,9 @@ struct AuthUseCaseTests {
 
         let useCase = AuthUseCase(
             userRepository: repository,
+            petRepository: petRepository,
+            conversationRepository: conversationRepository,
+            chatConversationRepository: chatConversationRepository,
             firebaseAuthService: firebase,
             remoteUserDataSource: remote
         )
@@ -90,6 +112,9 @@ struct AuthUseCaseTests {
 
     @Test func restoreSessionCreatesUserWhenRemoteMissing() async throws {
         let repository = UserRepository()
+        let petRepository = StubPetRepository()
+        let conversationRepository = StubConversationRepository()
+        let chatConversationRepository = StubChatConversationRepository()
         let firebase = StubFirebaseAuthService(
             userInfo: FirebaseUserInfo(uid: "firebase-5", name: "새 사용자", email: "new@example.com")
         )
@@ -98,6 +123,9 @@ struct AuthUseCaseTests {
 
         let useCase = AuthUseCase(
             userRepository: repository,
+            petRepository: petRepository,
+            conversationRepository: conversationRepository,
+            chatConversationRepository: chatConversationRepository,
             firebaseAuthService: firebase,
             remoteUserDataSource: remote
         )
