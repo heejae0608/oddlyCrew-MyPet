@@ -16,6 +16,17 @@ struct SettingsView: View {
     @State private var errorMessage: String?
     @State private var showingEmailCopiedAlert = false
 
+    private var appVersion: String {
+        let bundle = Bundle.main
+        let version = bundle.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"
+        if let build = bundle.infoDictionary?["CFBundleVersion"] as? String,
+           build.isEmpty == false,
+           build != version {
+            return "\(version) (\(build))"
+        }
+        return version
+    }
+
     var body: some View {
         NavigationView {
             List {
@@ -154,7 +165,7 @@ struct SettingsView: View {
                     .foregroundColor(.blue)
                 Text("버전")
                 Spacer()
-                Text("1.0.0")
+                Text(appVersion)
                     .foregroundColor(.gray)
             }
 
@@ -195,9 +206,6 @@ struct SettingsView: View {
                         .foregroundColor(.blue)
                     Text("오픈소스 라이선스")
                     Spacer()
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.gray)
-                        .font(.caption)
                 }
             }
 
