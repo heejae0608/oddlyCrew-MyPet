@@ -26,7 +26,6 @@ struct HistoryView: View {
             userId: UUID(),
             name: "",
             species: "",
-            age: 0,
             gender: "",
             isNeutered: false
         )
