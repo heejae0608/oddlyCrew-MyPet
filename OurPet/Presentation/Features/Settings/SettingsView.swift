@@ -11,10 +11,17 @@ import UIKit
 struct SettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
     @EnvironmentObject private var session: SessionViewModel
+    @Environment(\.openURL) var openURL
     @State private var showingLogoutAlert = false
     @State private var showingDeleteAccountAlert = false
     @State private var errorMessage: String?
     @State private var showingEmailCopiedAlert = false
+    
+    private let email = SendEmailToDeveloper(
+        toAddress: "oddlycrew@gmail.com",
+        subject: "OurPet 문의사항",
+        messageHeader: "아래에 내용을 입력해주시면,\n더욱 신속하고 정확한 처리가 가능합니다.\n\n단말기 명: \niOS 버전: \nOurPet 버전: \n문의내용: \n"
+    )
 
     private var appVersion: String {
         let bundle = Bundle.main
@@ -29,17 +36,28 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationView {
-            List {
-                if let user = viewModel.user {
-                    userSection(user: user)
-                    statsSection
+            VStack {
+                HStack {
+                    Text("마이")
+                        .font(.system(size: 24, weight: .bold))
                 }
-
-                appInfoSection
-                accountSection
-                cautionSection
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 10)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 32)
+                
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack {
+                        userInfo
+                            .padding(.vertical, 10)
+                        petInfo
+                            .padding(.vertical, 10)
+                        appInfo
+                            .padding(.vertical, 12)
+                        appAccountInfo
+                    }
+                }
             }
-            .navigationTitle("설정")
             .alert("로그아웃", isPresented: $showingLogoutAlert) {
                 Button("취소", role: .cancel) { }
                 Button("로그아웃", role: .destructive) {
@@ -55,11 +73,6 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("계정과 모든 데이터가 영구적으로 삭제됩니다. 계속하시겠습니까?")
-            }
-            .alert("이메일 복사 완료", isPresented: $showingEmailCopiedAlert) {
-                Button("확인", role: .cancel) { }
-            } message: {
-                Text("개발자 이메일이 클립보드에 복사되었습니다.")
             }
             .overlay {
                 if session.appState == .loading {
@@ -106,6 +119,87 @@ struct SettingsView: View {
                 Task { await viewModel.refreshConsultationCount(pets: pets) }
             }
         }
+        
+//        VStack {
+//            NavigationView {
+//                List {
+//                    if let user = viewModel.user {
+//                        userSection(user: user)
+//                        statsSection
+//                    }
+//                    
+//                    appInfoSection
+//                    accountSection
+//                    cautionSection
+//                }
+//                .navigationTitle("설정")
+//                .alert("로그아웃", isPresented: $showingLogoutAlert) {
+//                    Button("취소", role: .cancel) { }
+//                    Button("로그아웃", role: .destructive) {
+//                        viewModel.logout()
+//                    }
+//                } message: {
+//                    Text("정말 로그아웃하시겠습니까?")
+//                }
+//                .alert("계정 삭제", isPresented: $showingDeleteAccountAlert) {
+//                    Button("취소", role: .cancel) { }
+//                    Button("삭제", role: .destructive) {
+//                        viewModel.deleteAccount()
+//                    }
+//                } message: {
+//                    Text("계정과 모든 데이터가 영구적으로 삭제됩니다. 계속하시겠습니까?")
+//                }
+//                .alert("이메일 복사 완료", isPresented: $showingEmailCopiedAlert) {
+//                    Button("확인", role: .cancel) { }
+//                } message: {
+//                    Text("개발자 이메일이 클립보드에 복사되었습니다.")
+//                }
+//                .overlay {
+//                    if session.appState == .loading {
+//                        ZStack {
+//                            Color.black.opacity(0.3)
+//                                .ignoresSafeArea()
+//                            ProgressView()
+//                                .progressViewStyle(.circular)
+//                                .padding()
+//                                .background(Color(.systemBackground))
+//                                .clipShape(RoundedRectangle(cornerRadius: 12))
+//                        }
+//                    }
+//                }
+//                .onChange(of: session.appState) {
+//                    if case let .error(message) = session.appState {
+//                        errorMessage = message
+//                    }
+//                }
+//                .alert(
+//                    "오류",
+//                    isPresented: Binding(
+//                        get: { errorMessage != nil },
+//                        set: { isPresented in
+//                            if !isPresented {
+//                                errorMessage = nil
+//                                session.resetState()
+//                            }
+//                        }
+//                    ),
+//                    presenting: errorMessage
+//                ) { _ in
+//                    Button("확인", role: .cancel) {
+//                        errorMessage = nil
+//                        session.resetState()
+//                    }
+//                } message: { message in
+//                    Text(message)
+//                }
+//                .task {
+//                    await viewModel.refreshConsultationCount(pets: session.pets)
+//                }
+//                .onChange(of: session.pets) { pets in
+//                    Task { await viewModel.refreshConsultationCount(pets: pets) }
+//                }
+//            }
+//        }
     }
 
     private func userSection(user: User) -> some View {
@@ -135,11 +229,194 @@ struct SettingsView: View {
             .padding(.vertical, 4)
         }
     }
+    
+    /// 사용자 정보
+    private var userInfo: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "person.circle.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 60, height: 60)
+                .foregroundStyle(.appPeach)
+                .clipShape(Circle())
+            
+            VStack(alignment: .leading, spacing: 6) {
+                if let user = viewModel.user {
+                    Text(user.name)
+                        .font(.system(size: 18, weight: .medium))
+                    
+                    if let email = user.email {
+                        Text(email)
+                            .font(.system(size: 14, weight: .light))
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
+    }
+
+    /// 반려동물 정보
+    private var petInfo: some View {
+        VStack(alignment: .leading) {
+            Text("반려동물")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(.appWhite)
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
+            
+            Divider()
+                .frame(height: 1)
+                .background(.appLightGray)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            
+            HStack {
+                Text("등록된 반려동물")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.appWhite)
+                
+                Spacer()
+                
+                Text("\(session.pets.count) 마리")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.appWhite)
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+            
+            HStack {
+                Text("반려동물 상담횟수")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.appWhite)
+                
+                Spacer()
+                
+                Text("\(viewModel.consultationCount)회")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.appWhite)
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
+        }
+        .background(.appOrange)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .padding(.horizontal, 20)
+    }
+    
+    /// 앱 정보
+    private var appInfo: some View {
+        VStack(alignment: .leading) {
+            
+            HStack {
+                Text("앱 버전")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.black)
+                
+                Spacer()
+                
+                Text(appVersion)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.gray)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 20)
+            .padding(.bottom, 24)
+            
+            HStack {
+                Text("AppStore에서 보기")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.black)
+                
+                Spacer()
+                if let url = viewModel.appStoreURL {
+                    Link(destination: url) {
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(.black)
+                    }
+                }
+            }
+            .contentShape(Rectangle())
+            .padding(.horizontal, 16)
+            .padding(.bottom, 20)
+            
+            HStack {
+                Text("개발자 문의")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.black)
+                
+                Spacer()
+               
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(.black)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                email.send(openURL: openURL)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 20)
+            
+            NavigationLink {
+                OpenSourceLicensesView(licenses: viewModel.openSourceLicenses)
+            } label: {
+                HStack {
+                    Text("오픈소스 라이선스")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundStyle(.black)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.black)
+                }
+                .contentShape(Rectangle())
+                .padding(.horizontal, 16)
+                .padding(.bottom, 20)
+            }
+        }
+        .background(.appWhite)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 0)
+        .padding(.horizontal, 20)
+    }
+    
+    /// 계정 정보
+    private var appAccountInfo: some View {
+        VStack {
+            Button {
+                showingLogoutAlert = true
+            } label: {
+                Text("로그아웃")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, minHeight: 56)
+                    .contentShape(Rectangle())
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(.appOrange, lineWidth: 1)
+            )
+            .padding(.bottom, 8)
+            
+            Button {
+                showingDeleteAccountAlert = true
+            } label: {
+                Text("회원탈퇴")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.gray)
+                    .underline(true, color: .gray)
+            }
+
+            
+            
+        }
+        .padding(.horizontal, 20)
+    }
 
     private var statsSection: some View {
         Section("반려동물 통계") {
             HStack {
-                Image(systemName: "pawprint.2.fill")
+                Image(systemName: "pawprint.fill")
                     .foregroundColor(.green)
                 Text("등록된 반려동물")
                 Spacer()
@@ -157,7 +434,7 @@ struct SettingsView: View {
             }
         }
     }
-
+    
     private var appInfoSection: some View {
         Section("앱 정보") {
             HStack {
@@ -274,5 +551,31 @@ private extension SettingsView {
 
     func formattedJoinDate(_ date: Date) -> String {
         Self.joinDateFormatter.string(from: date)
+    }
+}
+
+/// 개발자 문의 (iOS 이메일 시스템 연동)
+struct SendEmailToDeveloper {
+    let toAddress: String
+    let subject: String
+    let messageHeader: String
+    var body: String {
+        """
+        \(messageHeader)
+    --------------------------------------
+    """
+    }
+    
+    func send(openURL: OpenURLAction) {
+        let urlString = "mailto:\(toAddress)?subject=\(subject.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? "")&body=\(body.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? "")"
+        guard let url = URL(string: urlString) else { return }
+        openURL(url) { accepted in
+            if !accepted {
+                print("""
+                This device does not support email
+                \(body)
+                """)
+            }
+        }
     }
 }

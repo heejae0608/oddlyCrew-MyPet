@@ -74,7 +74,7 @@ struct MainTabView: View {
             SettingsView(viewModel: settingsViewModel)
                 .tabItem {
                     Image(systemName: "gearshape.fill")
-                    Text("설정")
+                    Text("마이")
                 }
                 .environmentObject(session)
                 .tag(3)
