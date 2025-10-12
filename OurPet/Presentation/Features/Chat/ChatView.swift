@@ -193,7 +193,6 @@ struct ChatView: View {
                 )
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .focused($isMessageFieldFocused)
-                .lineLimit(1...4)
                 .submitLabel(.send)
                 .onSubmit {
                     if !viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isLoading {
@@ -361,9 +360,24 @@ struct ChatMessageView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     // AI 헤더
                     HStack(spacing: 6) {
-                        Image(systemName: "brain.head.profile")
-                            .foregroundColor(AppColor.ink)
-                        Text("AI 어시스턴트")
+                        if let data = chatViewModel.selectedPet?.decodedProfileImageData,
+                            let uiImage = UIImage(data: data) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .frame(width: 40, height: 40)
+                                .scaledToFit()
+                                .clipShape(Circle())
+                        }else {
+                            Image(systemName: "pawprint.circle")
+                                .resizable()
+                                .frame(width: 40, height: 40)
+                                .scaledToFit()
+                                .foregroundColor(AppColor.orange.opacity(0.35))
+                                .background(AppColor.white.opacity(0.6))
+                                .clipShape(Circle())
+                        }
+                        
+                        Text("\(chatViewModel.selectedPet?.name ?? "")")
                             .font(.caption)
                             .foregroundColor(AppColor.ink)
                     }
