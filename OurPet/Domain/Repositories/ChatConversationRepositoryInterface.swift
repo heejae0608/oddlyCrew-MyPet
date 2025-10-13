@@ -27,4 +27,7 @@ protocol ChatConversationRepositoryInterface {
 
     // 상담 완료 처리
     func markConversationCompleted(conversationId: UUID) async throws
+
+    // 상담 상태 업데이트
+    func updateConversationStatus(conversationId: UUID, status: ChatConversation.Status) async throws
 }

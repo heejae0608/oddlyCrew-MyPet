@@ -66,8 +66,10 @@ struct HistoryView: View {
                             Section(header: Text(dateString)) {
                                ForEach(conversations) { conversation in
                                    ChatConversationListView(
-                                    conversation: conversation
+                                    conversation: conversation,
+                                    isDisabled: conversation.status == .closed
                                    ) {
+                                       guard conversation.status != .closed else { return }
                                        self.selectedConversation = conversation
                                    }
                                    .listRowSeparator(.hidden)
@@ -141,6 +143,7 @@ struct HistoryView: View {
 
 struct ChatConversationListView: View {
     let conversation: ChatConversation
+    let isDisabled: Bool
     let onToggle: () -> Void
 
     private var messagePreviews: [ChatMessage] {
@@ -185,23 +188,7 @@ struct ChatConversationListView: View {
                         Text("상담 세션")
                             .font(.caption)
                             .fontWeight(.semibold)
-                        if conversation.isCompleted {
-                            Text("완료")
-                                .font(.caption2)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.green.opacity(0.2))
-                                .foregroundColor(.green)
-                                .cornerRadius(4)
-                        } else {
-                            Text("진행중")
-                                .font(.caption2)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.orange.opacity(0.2))
-                                .foregroundColor(.orange)
-                                .cornerRadius(4)
-                        }
+                        statusBadge
                     }
                     Text("\(conversation.responseCount)개 응답")
                         .font(.caption2)
@@ -236,7 +223,20 @@ struct ChatConversationListView: View {
             }
         }
         .contentShape(Rectangle())
-        .onTapGesture(perform: onToggle)
+        .onTapGesture {
+            guard isDisabled == false else { return }
+            onToggle()
+        }
+        .opacity(isDisabled ? 0.5 : 1)
+        .overlay(
+            Group {
+                if isDisabled {
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.gray.opacity(0.3), lineWidth: 1)
+                }
+            }
+        )
+        .allowsHitTesting(isDisabled == false)
         .padding(.vertical, 8)
         .padding(.horizontal, 16)
         .background(
@@ -244,6 +244,27 @@ struct ChatConversationListView: View {
                 .fill(.appWhite)
                 .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         )
+    }
+
+    private var statusBadge: some View {
+        let (text, foreground, background): (String, Color, Color) = {
+            switch conversation.status {
+            case .inProgress:
+                return ("진행중", .orange, Color.orange.opacity(0.2))
+            case .completed:
+                return ("완료", .green, Color.green.opacity(0.2))
+            case .closed:
+                return ("종료", .gray, Color.gray.opacity(0.2))
+            }
+        }()
+
+        return Text(text)
+            .font(.caption2)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(background)
+            .foregroundColor(foreground)
+            .cornerRadius(4)
     }
 }
 

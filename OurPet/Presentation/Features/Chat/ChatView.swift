@@ -181,6 +181,39 @@ struct ChatView: View {
 
     private var messageComposer: some View {
         VStack(spacing: 0) {
+            if viewModel.isConversationCompleted {
+                VStack(spacing: 12) {
+                    HStack(spacing: 12) {
+                        if viewModel.canShowContinueButton {
+                            Button {
+                                viewModel.continueConversation()
+                            } label: {
+                                Text("대화 계속하기")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(AppColor.orange)
+                        }
+
+                        Button(role: .destructive) {
+                            viewModel.startNewConversation()
+                        } label: {
+                            Text("대화 새로하기")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(AppColor.orange)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color(.systemBackground))
+            }
+
             Divider()
                 .background(Color(.separator))
 

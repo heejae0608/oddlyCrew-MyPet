@@ -121,20 +121,28 @@ final class ChatConversationRepository: ChatConversationRepositoryInterface {
     }
 
     func markConversationCompleted(conversationId: UUID) async throws {
-        Log.debug("상담 완료 처리 시작 (conversationId: \(conversationId.uuidString))", tag: "ChatConversationRepository")
+        try await updateConversationStatus(conversationId: conversationId, status: .completed)
+    }
 
-        // 기존 대화 세션 가져오기
+    func updateConversationStatus(conversationId: UUID, status: ChatConversation.Status) async throws {
+        Log.debug("상담 상태 업데이트 (conversationId: \(conversationId.uuidString), status: \(status.rawValue))", tag: "ChatConversationRepository")
+
         guard var conversation = try await getConversation(by: conversationId) else {
             throw ChatConversationError.conversationNotFound
         }
 
-        // 완료 처리
-        conversation.markCompleted()
+        switch status {
+        case .inProgress:
+            conversation.reopen()
+        case .completed:
+            conversation.markCompleted()
+        case .closed:
+            conversation.close()
+        }
 
-        // 저장
         try await saveConversation(conversation)
 
-        Log.debug("✅ 상담 완료 처리 완료", tag: "ChatConversationRepository")
+        Log.debug("✅ 상담 상태 업데이트 완료", tag: "ChatConversationRepository")
     }
 }
 

@@ -17,13 +17,20 @@ final class ChatViewModel: ObservableObject {
     @Published var selectedPet: Pet?
     @Published private(set) var latestAssistantReply: AssistantReply?
     @Published var alert: AppAlert?
+    @Published var isConversationCompleted: Bool = false
+    @Published var canShowContinueButton: Bool = false
 
     private let session: SessionViewModel
     private let chatUseCase: ChatUseCaseInterface
     private var cancellables = Set<AnyCancellable>()
 
     // 펫별 메시지 캐시 (현재 세션 동안만 유지)
-    private var messagesByPet: [UUID: [ChatMessage]] = [:]
+    private struct CachedChatState {
+        var messages: [ChatMessage]
+        var status: ChatConversation.Status?
+    }
+
+    private var messagesByPet: [UUID: CachedChatState] = [:]
 
     init(session: SessionViewModel, chatUseCase: ChatUseCaseInterface) {
         self.session = session
@@ -47,21 +54,24 @@ final class ChatViewModel: ObservableObject {
 
         // 기존 세션 메시지 먼저 확인
         let petId = pet.id
-        if let existingMessages = messagesByPet[petId], !existingMessages.isEmpty {
-            messages = existingMessages
+        if let cachedState = messagesByPet[petId] {
+            messages = cachedState.messages
+            updateCompletionFlags(with: cachedState.status)
             return
         }
 
         Task {
-            let lastConversationMessages = await chatUseCase.loadLastConversation(for: pet)
+            let history = await chatUseCase.loadLastConversation(for: pet)
             await MainActor.run {
-                if lastConversationMessages.isEmpty {
+                if history.messages.isEmpty {
                     self.messages = []
-                    self.messagesByPet[petId] = []
+                    self.messagesByPet[petId] = CachedChatState(messages: [], status: history.status)
+                    self.updateCompletionFlags(with: history.status)
                 } else {
-                    self.messages = lastConversationMessages
-                    self.messagesByPet[petId] = lastConversationMessages
-                    Log.info("🔄 이전 대화 세션 불러옴 - 메시지 수: \(lastConversationMessages.count)", tag: "Chat")
+                    self.messages = history.messages
+                    self.messagesByPet[petId] = CachedChatState(messages: history.messages, status: history.status)
+                    self.updateCompletionFlags(with: history.status)
+                    Log.info("🔄 이전 대화 세션 불러옴 - 메시지 수: \(history.messages.count)", tag: "Chat")
                 }
             }
         }
@@ -83,8 +93,11 @@ final class ChatViewModel: ObservableObject {
         // 펫 정보는 이제 시스템 메시지에서 처리하므로, 사용자 메시지는 순수 질문만
         let userMessage = ChatMessage.user(trimmed, petId: selectedPet?.id)
         appendToTimeline(userMessage)
+        updateCachedStatus(.inProgress)
         messageText = ""
         isLoading = true
+        isConversationCompleted = false
+        canShowContinueButton = false
 
         Log.info("📤 ChatUseCase로 메시지 전달", tag: "Chat")
 
@@ -115,6 +128,16 @@ final class ChatViewModel: ObservableObject {
                     let assistantMessage = ChatMessage.assistant(reply.message, petId: self.selectedPet?.id)
                     self.appendToTimeline(assistantMessage)
 
+                    if reply.status == .providingAnswer {
+                        self.isConversationCompleted = true
+                        self.canShowContinueButton = true
+                        self.updateCachedStatus(.completed)
+                    } else {
+                        self.isConversationCompleted = false
+                        self.canShowContinueButton = false
+                        self.updateCachedStatus(.inProgress)
+                    }
+
                     // 상담 완료 시 자동 새 대화 준비
                     if reply.status == .providingAnswer {
                         Log.info("🎯 상담 완료 - UI에서 새로운 대화 준비", tag: "Chat")
@@ -131,10 +154,12 @@ final class ChatViewModel: ObservableObject {
 
         messages.removeAll()
         if let petId = selectedPet?.id {
-            messagesByPet[petId] = []
+            messagesByPet[petId] = CachedChatState(messages: [], status: .closed)
         }
         chatUseCase.clearHistory(for: selectedPet?.id)
         latestAssistantReply = nil
+        isConversationCompleted = false
+        canShowContinueButton = false
 
         Log.info("✅ 채팅 기록 삭제 완료", tag: "Chat")
     }
@@ -148,6 +173,17 @@ final class ChatViewModel: ObservableObject {
         loadHistory()
 
         Log.info("📜 히스토리 로드 완료 - 메시지 수: \(messages.count)개", tag: "Chat")
+    }
+
+    func continueConversation() {
+        canShowContinueButton = false
+        isConversationCompleted = true
+        if let conversationId = selectedPet?.currentConversationId {
+            Task {
+                await chatUseCase.updateConversationStatus(conversationId: conversationId, status: .inProgress)
+            }
+        }
+        updateCachedStatus(.inProgress)
     }
 
     private func bind() {
@@ -180,9 +216,9 @@ final class ChatViewModel: ObservableObject {
 
         // 펫별 메시지 캐시에도 저장
         if let petId = selectedPet?.id {
-            var petMessages = messagesByPet[petId] ?? []
-            petMessages.append(message)
-            messagesByPet[petId] = petMessages
+            var cached = messagesByPet[petId] ?? CachedChatState(messages: [], status: nil)
+            cached.messages.append(message)
+            messagesByPet[petId] = cached
         }
     }
 
@@ -218,16 +254,47 @@ final class ChatViewModel: ObservableObject {
 
         // UI 초기화
         messages.removeAll()
-        messagesByPet[petId] = []
+        messagesByPet[petId] = CachedChatState(messages: [], status: .inProgress)
         latestAssistantReply = nil
         messageText = ""
+        isConversationCompleted = false
+        canShowContinueButton = false
 
         // 백엔드에서 새 세션 준비
         chatUseCase.startNewConversation(for: petId)
 
         Log.debug("새 대화 준비 완료 - UI 초기화됨", tag: "Chat")
+
+        insertWelcomeMessageIfNeeded()
     }
 
+}
+
+private extension ChatViewModel {
+    func updateCompletionFlags(with status: ChatConversation.Status?) {
+        if status == .completed {
+            isConversationCompleted = true
+            canShowContinueButton = true
+        } else {
+            isConversationCompleted = false
+            canShowContinueButton = false
+        }
+    }
+
+    func updateCachedStatus(_ status: ChatConversation.Status) {
+        guard let petId = selectedPet?.id else { return }
+        var cached = messagesByPet[petId] ?? CachedChatState(messages: messages, status: nil)
+        cached.status = status
+        cached.messages = messages
+        messagesByPet[petId] = cached
+    }
+
+    func insertWelcomeMessageIfNeeded() {
+        guard messages.isEmpty else { return }
+        let message = ChatMessage.assistant("궁금한 것이 있으면 물어보세요!", petId: selectedPet?.id)
+        appendToTimeline(message)
+        updateCachedStatus(.inProgress)
+    }
 }
 
 private struct MessageWithPetInfoPayload: Encodable {

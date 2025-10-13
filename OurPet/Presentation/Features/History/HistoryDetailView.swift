@@ -68,21 +68,23 @@ struct HistoryDetailView: View {
                             }
                         }
                     }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            updateData = UpdateHistoryToChat(
-                                messages: conversation.messages,
-                                selectedPet: selectedPet
-                            )
-                            
-                            dismiss()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                selectedTab = 2 // 상담 탭
-                            }
-                        } label: {
-                            Text("상담 이어가기")
-                        }
+                    if conversation.status != .closed {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button {
+                                updateData = UpdateHistoryToChat(
+                                    messages: conversation.messages,
+                                    selectedPet: selectedPet
+                                )
 
+                                dismiss()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    selectedTab = 2 // 상담 탭
+                                }
+                            } label: {
+                                Text("상담 이어가기")
+                            }
+
+                        }
                     }
                 }
         }

@@ -9,6 +9,12 @@ import Foundation
 
 // 대화 세션 - 하나의 상담 세션 (상담 시작~완료까지)
 struct ChatConversation: Identifiable, Equatable, Hashable {
+    enum Status: String, Codable {
+        case inProgress
+        case completed
+        case closed
+    }
+
     let id: UUID
     let petId: UUID
     let startDate: Date
@@ -16,7 +22,7 @@ struct ChatConversation: Identifiable, Equatable, Hashable {
     var responses: [ChatResponse] // response_id와 요약을 포함한 응답들
     var messages: [ChatMessage] // 사용자/AI 메시지 타임라인
     var fullSummary: String // 대화 전체 최종 요약
-    var isCompleted: Bool // 상담 완료 여부
+    var status: Status
 
     init(
         id: UUID = UUID(),
@@ -26,7 +32,7 @@ struct ChatConversation: Identifiable, Equatable, Hashable {
         responses: [ChatResponse] = [],
         messages: [ChatMessage] = [],
         fullSummary: String = "",
-        isCompleted: Bool = false
+        status: Status = .inProgress
     ) {
         self.id = id
         self.petId = petId
@@ -35,8 +41,10 @@ struct ChatConversation: Identifiable, Equatable, Hashable {
         self.responses = responses
         self.messages = messages
         self.fullSummary = fullSummary
-        self.isCompleted = isCompleted
+        self.status = status
     }
+
+    var isCompleted: Bool { status == .completed }
 }
 
 // 개별 응답 - OpenAI response_id와 요약 포함
@@ -97,7 +105,7 @@ extension ChatResponse: Codable {
 // MARK: - ChatConversation Codable Implementation
 extension ChatConversation: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, petId, startDate, lastUpdated, responses, messages, fullSummary, isCompleted
+        case id, petId, startDate, lastUpdated, responses, messages, fullSummary, status, isCompleted
     }
 
     init(from decoder: Decoder) throws {
@@ -122,7 +130,13 @@ extension ChatConversation: Codable {
         self.responses = try container.decode([ChatResponse].self, forKey: .responses)
         self.messages = (try? container.decode([ChatMessage].self, forKey: .messages)) ?? []
         self.fullSummary = try container.decode(String.self, forKey: .fullSummary)
-        self.isCompleted = try container.decode(Bool.self, forKey: .isCompleted)
+
+        if let decodedStatus = try container.decodeIfPresent(Status.self, forKey: .status) {
+            self.status = decodedStatus
+        } else {
+            let completed = try container.decodeIfPresent(Bool.self, forKey: .isCompleted) ?? false
+            self.status = completed ? .completed : .inProgress
+        }
     }
 
     func encode(to encoder: Encoder) throws {
@@ -138,7 +152,8 @@ extension ChatConversation: Codable {
         try container.encode(responses, forKey: .responses)
         try container.encode(messages, forKey: .messages)
         try container.encode(fullSummary, forKey: .fullSummary)
-        try container.encode(isCompleted, forKey: .isCompleted)
+        try container.encode(status, forKey: .status)
+        try container.encode(status == .completed, forKey: .isCompleted)
     }
 }
 
@@ -171,8 +186,20 @@ extension ChatConversation {
         lastUpdated = Date()
     }
 
-    mutating func markCompleted() {
-        isCompleted = true
+    mutating func updateStatus(_ status: Status) {
+        self.status = status
         lastUpdated = Date()
+    }
+
+    mutating func markCompleted() {
+        updateStatus(.completed)
+    }
+
+    mutating func reopen() {
+        updateStatus(.inProgress)
+    }
+
+    mutating func close() {
+        updateStatus(.closed)
     }
 }

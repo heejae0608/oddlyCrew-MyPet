@@ -8,13 +8,27 @@
 import Combine
 import Foundation
 
+struct ChatHistoryResult {
+    let messages: [ChatMessage]
+    let conversation: ChatConversation?
+
+    var status: ChatConversation.Status? {
+        conversation?.status
+    }
+
+    var lastAssistantMessage: ChatMessage? {
+        messages.reversed().first(where: { $0.role == .assistant })
+    }
+}
+
 protocol ChatUseCaseInterface {
     func history(for petId: UUID?) -> [ChatMessage]
-    func loadLastConversation(for pet: Pet) async -> [ChatMessage]
+    func loadLastConversation(for pet: Pet) async -> ChatHistoryResult
     func append(_ message: ChatMessage)
     func clearHistory(for petId: UUID?)
     func startNewConversation(for petId: UUID)
     func send(messages: [ChatMessage], pet: Pet?) -> AnyPublisher<AssistantReply, Error>
+    func updateConversationStatus(conversationId: UUID, status: ChatConversation.Status) async
 }
 
 final class ChatUseCase: ChatUseCaseInterface {
@@ -44,68 +58,73 @@ final class ChatUseCase: ChatUseCaseInterface {
         return []
     }
 
-    func loadLastConversation(for pet: Pet) async -> [ChatMessage] {
-        Log.debug("전체 대화 이력 불러오기 시작 (petId: \(pet.id))", tag: "ChatUseCase")
+    func loadLastConversation(for pet: Pet) async -> ChatHistoryResult {
+        Log.debug("최근 대화 세션 불러오기 시작 (petId: \(pet.id))", tag: "ChatUseCase")
 
         do {
             let conversations = try await chatConversationRepository
                 .getConversations(for: pet.id)
-                .sorted { $0.startDate < $1.startDate }
+                .sorted { $0.lastUpdated > $1.lastUpdated }
 
             guard conversations.isEmpty == false else {
                 Log.debug("저장된 대화 세션 없음", tag: "ChatUseCase")
                 let legacy = await loadLegacyConversationIfNeeded(for: pet)
-                return limitMessagesToRecentTurns(legacy, limit: maxTurnCount)
+                let limited = limitMessagesToRecentTurns(legacy, limit: maxTurnCount)
+                return ChatHistoryResult(messages: limited, conversation: nil)
             }
 
-            var aggregatedMessages: [ChatMessage] = []
-            aggregatedMessages.reserveCapacity(conversations.reduce(0) { $0 + $1.messages.count })
-
-            for conversation in conversations {
-                let messages = resolveMessages(from: conversation, petId: pet.id)
-                if messages.isEmpty == false {
-                    aggregatedMessages.append(contentsOf: messages)
-                } else {
-                    aggregatedMessages.append(contentsOf: fallbackMessages(from: conversation, petId: pet.id))
-                }
-            }
-
-            if aggregatedMessages.isEmpty {
-                Log.debug("모든 세션에 저장된 메시지가 없어 레거시 데이터 확인", tag: "ChatUseCase")
-                let legacy = await loadLegacyConversationIfNeeded(for: pet)
-                return limitMessagesToRecentTurns(legacy, limit: maxTurnCount)
-            }
-
-            // 최신 활성 세션 동기화
             let activeConversation: ChatConversation? = {
                 if let currentId = pet.currentConversationId,
                    let existing = conversations.first(where: { $0.id == currentId }) {
                     return existing
                 }
-                return conversations.last(where: { $0.isCompleted == false }) ?? conversations.last
+                return conversations.first(where: { $0.status == .inProgress }) ?? conversations.first
             }()
 
             if let activeConversation,
-               activeConversation.isCompleted == false,
+               activeConversation.status == .inProgress,
                pet.currentConversationId != activeConversation.id {
                 var updatedPet = pet
                 updatedPet.currentConversationId = activeConversation.id
                 try await petRepository.updatePet(updatedPet)
                 Log.debug("currentConversationId 갱신 (id: \(activeConversation.id))", tag: "ChatUseCase")
-            } else if (activeConversation == nil || activeConversation?.isCompleted == true) && pet.currentConversationId != nil {
+            } else if (activeConversation == nil || activeConversation?.status != .inProgress),
+                      pet.currentConversationId != nil {
                 var updatedPet = pet
                 updatedPet.currentConversationId = nil
                 try await petRepository.updatePet(updatedPet)
                 Log.debug("활성 세션 없음 - currentConversationId 초기화", tag: "ChatUseCase")
             }
 
-            let sortedMessages = aggregatedMessages.sorted { $0.timestamp < $1.timestamp }
+            guard let conversation = activeConversation ?? conversations.first else {
+                Log.debug("활성 세션을 찾지 못해 레거시 데이터 확인", tag: "ChatUseCase")
+                let legacy = await loadLegacyConversationIfNeeded(for: pet)
+                let limited = limitMessagesToRecentTurns(legacy, limit: maxTurnCount)
+                return ChatHistoryResult(messages: limited, conversation: nil)
+            }
+
+            let resolvedMessages = resolveMessages(from: conversation, petId: pet.id)
+            let messagesToUse: [ChatMessage]
+
+            if resolvedMessages.isEmpty {
+                let fallback = fallbackMessages(from: conversation, petId: pet.id)
+                messagesToUse = fallback
+
+                if fallback.isEmpty {
+                    Log.debug("선택된 세션에 저장된 메시지가 없어 빈 배열 반환", tag: "ChatUseCase")
+                }
+            } else {
+                messagesToUse = resolvedMessages
+            }
+
+            let sortedMessages = messagesToUse.sorted { $0.timestamp < $1.timestamp }
             let limitedMessages = limitMessagesToRecentTurns(sortedMessages, limit: maxTurnCount)
-            Log.info("✅ 전체 대화 이력 로드 완료 (총 메시지 수: \(sortedMessages.count), 반환: \(limitedMessages.count))", tag: "ChatUseCase")
-            return limitedMessages
+
+            Log.info("✅ 최신 대화 세션 로드 완료 (세션 ID: \(conversation.id), 메시지 수: \(sortedMessages.count), 반환: \(limitedMessages.count))", tag: "ChatUseCase")
+            return ChatHistoryResult(messages: limitedMessages, conversation: conversation)
         } catch {
             Log.error("대화 이력 불러오기 실패: \(error.localizedDescription)", tag: "ChatUseCase")
-            return []
+            return ChatHistoryResult(messages: [], conversation: nil)
         }
     }
 
@@ -141,6 +160,12 @@ final class ChatUseCase: ChatUseCaseInterface {
             do {
                 if let petId {
                     if let pet = petRepository.pets.first(where: { $0.id == petId }) {
+                        if let conversationId = pet.currentConversationId {
+                            try await chatConversationRepository.updateConversationStatus(
+                                conversationId: conversationId,
+                                status: .closed
+                            )
+                        }
                         var updatedPet = pet
                         updatedPet.currentConversationId = nil
                         updatedPet.responseId = nil
@@ -149,6 +174,12 @@ final class ChatUseCase: ChatUseCaseInterface {
                     }
                 } else {
                     for pet in petRepository.pets {
+                        if let conversationId = pet.currentConversationId {
+                            try await chatConversationRepository.updateConversationStatus(
+                                conversationId: conversationId,
+                                status: .closed
+                            )
+                        }
                         var updatedPet = pet
                         updatedPet.currentConversationId = nil
                         updatedPet.responseId = nil
@@ -166,6 +197,12 @@ final class ChatUseCase: ChatUseCaseInterface {
         Task {
             do {
                 if let pet = petRepository.pets.first(where: { $0.id == petId }) {
+                    if let conversationId = pet.currentConversationId {
+                        try await chatConversationRepository.updateConversationStatus(
+                            conversationId: conversationId,
+                            status: .closed
+                        )
+                    }
                     var updatedPet = pet
                     updatedPet.currentConversationId = nil // 현재 세션 종료
                     try await petRepository.updatePet(updatedPet)
@@ -207,9 +244,9 @@ final class ChatUseCase: ChatUseCaseInterface {
                         currentConversation = try await self.chatConversationRepository.getConversation(by: conversationId)
 
                         if let conversation = currentConversation {
-                            // 완료된 세션이면 새 세션 시작
-                            if conversation.isCompleted {
-                                Log.debug("✅ 기존 대화 세션이 완료됨 - 새 세션 생성", tag: "ChatUseCase")
+                            // 완료 또는 종료된 세션이면 새 세션 시작
+                            if conversation.status == .completed || conversation.status == .closed {
+                                Log.debug("✅ 기존 대화 세션이 종료 상태 - 새 세션 생성", tag: "ChatUseCase")
                                 currentConversation = nil // 새 세션 생성하도록
                             } else {
                                 // fullSummary를 previousSummary로 전달 (대화 맥락 유지)
@@ -223,7 +260,7 @@ final class ChatUseCase: ChatUseCaseInterface {
                                 Log.debug("🔄 기존 대화 세션 사용!", tag: "ChatUseCase")
                                 Log.debug("  - 세션 ID: \(conversationId)", tag: "ChatUseCase")
                                 Log.debug("  - 응답 수: \(conversation.responseCount)", tag: "ChatUseCase")
-                                Log.debug("  - 완료 상태: \(conversation.isCompleted)", tag: "ChatUseCase")
+                                Log.debug("  - 상태: \(conversation.status)", tag: "ChatUseCase")
                                 Log.debug("  - 전체 요약 길이: \(conversation.fullSummary.count)자", tag: "ChatUseCase")
                                 Log.debug("  - 전달할 previousSummary: \(previousSummary?.prefix(100) ?? "없음")...", tag: "ChatUseCase")
                             }
@@ -333,13 +370,18 @@ final class ChatUseCase: ChatUseCaseInterface {
                         if result.reply.status == .providingAnswer {
                             Log.info("🏁 상담 완료 - 하지만 계속 대화 가능하도록 세션 유지", tag: "ChatUseCase")
 
-                            try await self.chatConversationRepository.markConversationCompleted(
-                                conversationId: conversation.id
+                            try await self.chatConversationRepository.updateConversationStatus(
+                                conversationId: conversation.id,
+                                status: .completed
                             )
 
                             Log.debug("  - 세션 상태: 완료됨 (계속 대화 가능)", tag: "ChatUseCase")
                             Log.debug("  - currentConversationId: 유지됨", tag: "ChatUseCase")
                         } else {
+                            try await self.chatConversationRepository.updateConversationStatus(
+                                conversationId: conversation.id,
+                                status: .inProgress
+                            )
                             Log.debug("🔄 상담 진행 중 - 세션 유지", tag: "ChatUseCase")
                         }
                     } catch {
@@ -349,6 +391,14 @@ final class ChatUseCase: ChatUseCaseInterface {
             })
             .map { (result, _) in result.reply }
             .eraseToAnyPublisher()
+    }
+
+    func updateConversationStatus(conversationId: UUID, status: ChatConversation.Status) async {
+        do {
+            try await chatConversationRepository.updateConversationStatus(conversationId: conversationId, status: status)
+        } catch {
+            Log.error("대화 상태 업데이트 실패: \(error.localizedDescription)", tag: "ChatUseCase")
+        }
     }
 
 
