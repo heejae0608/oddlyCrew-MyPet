@@ -106,7 +106,7 @@ struct ChatView: View {
                     Spacer(minLength: 8)
 
                     if viewModel.messages.isEmpty {
-                        EmptyChatView()
+                        EmptyChatView(pet: viewModel.selectedPet)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 40)
                     } else {
@@ -171,7 +171,7 @@ struct ChatView: View {
         HStack {
             ProgressView()
                 .scaleEffect(0.8)
-            Text("AI가 생각 중...")
+            Text("상담 내용을 정리하고 있어요...")
                 .font(.caption)
                 .foregroundColor(.gray)
         }
@@ -188,7 +188,7 @@ struct ChatView: View {
                             Button {
                                 viewModel.continueConversation()
                             } label: {
-                                Text("대화 계속하기")
+                                Text(viewModel.continueButtonTitle)
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
                                     .frame(maxWidth: .infinity)
@@ -200,7 +200,7 @@ struct ChatView: View {
                         Button(role: .destructive) {
                             viewModel.startNewConversation()
                         } label: {
-                            Text("대화 새로하기")
+                            Text(viewModel.newConversationButtonTitle)
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
                                 .frame(maxWidth: .infinity)
@@ -220,7 +220,7 @@ struct ChatView: View {
             HStack(alignment: .bottom, spacing: 12) {
                 // 텍스트 입력 필드
                 TextField(
-                    "반려동물에 대해 궁금한 것을 물어보세요...",
+                    "궁금한 점을 입력해 주세요...",
                     text: $viewModel.messageText,
                     axis: .vertical
                 )
@@ -410,7 +410,7 @@ struct ChatMessageView: View {
                                 .clipShape(Circle())
                         }
                         
-                        Text("\(chatViewModel.selectedPet?.name ?? "")")
+                        Text(assistantDisplayName(for: chatViewModel.selectedPet))
                             .font(.caption)
                             .foregroundColor(AppColor.ink)
                     }
@@ -529,7 +529,7 @@ struct ChatMessageView: View {
 
                                 HStack {
                                     Spacer()
-                                    Text("새로운 질문이 있으시면 언제든지 말씀해주세요!")
+                                    Text("필요하실 때 다시 상담을 이어가실 수 있어요.")
                                         .font(.caption2)
                                         .foregroundColor(.secondary)
                                         .italic()
@@ -569,18 +569,55 @@ struct ChatMessageView: View {
 }
 
 struct EmptyChatView: View {
+    let pet: Pet?
+
+    private var titleText: String {
+        guard let pet else { return "보호자님, 상담을 시작해 주세요" }
+
+        let name = pet.name
+        let species = pet.species.lowercased()
+
+        if species.contains("강아지") || species.contains("개") || species.contains("dog") {
+            return "보호자님, \(name)에 대해 궁금한 점을 알려주세요"
+        }
+
+        if species.contains("고양이") || species.contains("cat") {
+            return "집사님, \(name)에 대해 알고 싶은 것이 있으신가요?"
+        }
+
+        return "\(name)에 대해 궁금한 점을 알려주세요"
+    }
+
+    private var subtitleText: String {
+        guard let pet else {
+            return "반려동물의 식습관이나 행동 변화를 알려주시면 상담을 도와드릴게요."
+        }
+
+        let species = pet.species.lowercased()
+
+        if species.contains("강아지") || species.contains("개") || species.contains("dog") {
+            return "최근 식사량, 활동량, 건강 상태 등 걱정되는 부분이 있다면 말씀해 주세요."
+        }
+
+        if species.contains("고양이") || species.contains("cat") {
+            return "사소한 변화라도 궁금한 점이 있다면 편하게 말씀해 주세요."
+        }
+
+        return "식습관, 행동, 건강 상태에 대해 궁금한 점이 있다면 알려주세요."
+    }
+
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "message.circle")
                 .font(.system(size: 80))
                 .foregroundColor(AppColor.orange)
 
-            Text("AI 상담을 시작해보세요")
+            Text(titleText)
                 .font(.title2)
                 .fontWeight(.medium)
                 .foregroundColor(AppColor.ink)
 
-            Text("반려동물의 건강이나 행동에 대해\n궁금한 것을 물어보세요!")
+            Text(subtitleText)
                 .font(.subheadline)
                 .foregroundColor(.gray)
                 .multilineTextAlignment(.center)
@@ -591,9 +628,9 @@ struct EmptyChatView: View {
                     .fontWeight(.semibold)
                     .foregroundColor(.gray)
 
-                Text("• 우리 강아지가 계속 기침을 해요")
-                Text("• 고양이가 갑자기 숨어있어요")
-                Text("• 설사를 하는데 괜찮을까요?")
+                Text("• 반려동물이 갑자기 숨어있어요")
+                Text("• 최근 식사량이 줄어든 것 같아요")
+                Text("• 검진이나 예방접종은 언제 해야 할까요?")
             }
             .font(.caption)
             .foregroundColor(.gray)
@@ -603,6 +640,11 @@ struct EmptyChatView: View {
         }
         .padding()
     }
+}
+
+private func assistantDisplayName(for pet: Pet?) -> String {
+    guard let pet else { return "돌봄 파트너" }
+    return "\(pet.name) 돌봄 파트너"
 }
 
 

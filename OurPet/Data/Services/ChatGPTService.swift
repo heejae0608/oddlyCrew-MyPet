@@ -187,7 +187,7 @@ final class ChatGPTService: ChatGPTServicing {
     }
 
     private func parseAssistantReply(from content: String) -> AssistantReply {
-        // ```json 코드 블록 제거
+        // ```json 코드 블록 제거 및 XML 대응
         let cleanedContent = content
             .replacingOccurrences(of: "```json\n", with: "")
             .replacingOccurrences(of: "\n```", with: "")
@@ -198,10 +198,16 @@ final class ChatGPTService: ChatGPTServicing {
         Log.debug("JSON 파싱 시도 - 정리된 내용 길이: \(cleanedContent.count)자", tag: "ChatGPT")
         Log.debug("JSON 파싱 시도 - 내용 미리보기: \(cleanedContent.prefix(200))...", tag: "ChatGPT")
 
-        guard let data = cleanedContent.data(using: .utf8),
-              let dto = try? decoder.decode(AssistantReplyDTO.self, from: data) else {
-            Log.warning("AssistantReplyDTO 파싱 실패, 원본 텍스트 사용", tag: "ChatGPT")
-            Log.debug("파싱 실패한 내용: \(cleanedContent)", tag: "ChatGPT")
+        if cleanedContent.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("<") {
+            if let reply = parseAssistantReplyXML(from: cleanedContent) {
+                Log.debug("XML 포맷 응답 파싱 성공", tag: "ChatGPT")
+                return reply
+            }
+            Log.warning("XML 포맷 감지했지만 파싱 실패", tag: "ChatGPT")
+        }
+
+        guard let data = cleanedContent.data(using: .utf8) else {
+            Log.warning("JSON 데이터로 변환 실패", tag: "ChatGPT")
             return AssistantReply(
                 message: content,
                 conversationSummary: nil,
@@ -215,9 +221,127 @@ final class ChatGPTService: ChatGPTServicing {
             )
         }
 
-        let reply = dto.domainModel
-        Log.debug("파싱 성공 - summary: \(reply.conversationSummary ?? "nil"), urgency: \(reply.urgencyLevel)", tag: "ChatGPT")
-        return reply
+        if let dto = try? decoder.decode(AssistantReplyDTO.self, from: data) {
+            let reply = dto.domainModel
+            Log.debug("파싱 성공(기본) - summary: \(reply.conversationSummary ?? "nil"), urgency: \(reply.urgencyLevel)", tag: "ChatGPT")
+            return reply
+        }
+
+        if let envelope = try? decoder.decode(AssistantReplyEnvelope.self, from: data) {
+            let reply = envelope.domainModel
+            Log.debug("파싱 성공(Enveloped) - summary: \(reply.conversationSummary ?? "nil"), urgency: \(reply.urgencyLevel)", tag: "ChatGPT")
+            return reply
+        }
+
+        if let fallbackReply = try? parseAssistantReplyFallback(from: data) {
+            Log.debug("파싱 성공(Fallback)", tag: "ChatGPT")
+            return fallbackReply
+        }
+
+        Log.warning("모든 파싱 시도 실패 - 원본 텍스트 사용", tag: "ChatGPT")
+        Log.debug("파싱 실패한 내용: \(cleanedContent)", tag: "ChatGPT")
+        return AssistantReply(
+            message: content,
+            conversationSummary: nil,
+            status: .unknown,
+            questions: [],
+            checklist: [],
+            urgencyLevel: .unknown,
+            vetConsultationNeeded: false,
+            vetConsultationReason: nil,
+            nextSteps: []
+        )
+    }
+
+    private func parseAssistantReplyFallback(from data: Data) throws -> AssistantReply {
+        let jsonObject = try JSONSerialization.jsonObject(with: data, options: [.allowFragments])
+
+        guard let root = jsonObject as? [String: Any] else {
+            throw ChatServiceError.invalidResponseBody("JSON 객체가 아님")
+        }
+
+        let finalResponse: [String: Any] = {
+            if let direct = root["final_response"] as? [String: Any],
+               let nested = direct["final_response"] as? [String: Any] {
+                return nested
+            }
+            if let direct = root["final_response"] as? [String: Any] {
+                return direct
+            }
+            return root
+        }()
+
+        guard let aiResponse = finalResponse["ai_response"] as? [String: Any],
+              let message = aiResponse["message"] as? String else {
+            throw ChatServiceError.invalidResponseBody("필수 키 누락")
+        }
+
+        let status = ConversationStatus(rawValue: (aiResponse["status"] as? String) ?? "") ?? .unknown
+        let checklistItems: [ChecklistItem] = {
+            guard let rows = finalResponse["checklist"] as? [[String: Any]] else { return [] }
+            return rows.compactMap { dict in
+                guard let item = dict["item"] as? String else { return nil }
+                let importance = (dict["importance"] as? String ?? "medium")
+                return ChecklistItem(item: item, importance: importance)
+            }
+        }()
+        let questions = (aiResponse["questions"] as? [String]) ?? []
+        let nextSteps: [NextStep] = {
+            guard let rows = finalResponse["next_steps"] as? [[String: Any]] else { return [] }
+            return rows.compactMap { dict in
+                guard let step = dict["step"] as? String else { return nil }
+                let importance = (dict["importance"] as? String ?? "medium")
+                return NextStep(step: step, importance: importance)
+            }
+        }()
+        let urgency = UrgencyLevel(rawValue: (finalResponse["urgency_level"] as? String ?? "").lowercased()) ?? .unknown
+        let vetDict = finalResponse["vet_consultation"] as? [String: Any]
+        let vetRecommended = vetDict?["recommended"] as? Bool ?? false
+        let vetReason = vetDict?["reason"] as? String
+        let summary = finalResponse["conversation_summary"] as? String
+
+        return AssistantReply(
+            message: message,
+            conversationSummary: summary,
+            status: status,
+            questions: questions,
+            checklist: checklistItems,
+            urgencyLevel: urgency,
+            vetConsultationNeeded: vetRecommended,
+            vetConsultationReason: vetReason,
+            nextSteps: nextSteps
+        )
+    }
+
+    private func parseAssistantReplyXML(from content: String) -> AssistantReply? {
+        func extract(tag: String, in text: String) -> String? {
+            guard let startRange = text.range(of: "<\(tag)>") ?? text.range(of: "<\(tag)><![CDATA[") else { return nil }
+            let closingTag = "</\(tag)>"
+            guard let endRange = text.range(of: closingTag) else { return nil }
+
+            let start = startRange.upperBound
+            let raw = text[start..<endRange.lowerBound]
+            let cleaned = raw.replacingOccurrences(of: "]]>", with: "")
+            return String(cleaned).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        guard let finalJSON = extract(tag: "final_response", in: content) else {
+            return nil
+        }
+
+        if let data = finalJSON.data(using: .utf8) {
+            if let dto = try? decoder.decode(AssistantReplyDTO.self, from: data) {
+                return dto.domainModel
+            }
+            if let envelope = try? decoder.decode(AssistantReplyEnvelope.self, from: data) {
+                return envelope.domainModel
+            }
+            if let fallback = try? parseAssistantReplyFallback(from: data) {
+                return fallback
+            }
+        }
+
+        return nil
     }
 
     private func makeRequest(path: String, method: String, body: Data? = nil) throws -> URLRequest {
@@ -388,6 +512,31 @@ private struct AssistantReplyDTO: Decodable {
             vetConsultationReason: finalResponse.vetConsultation?.reason,
             nextSteps: steps
         )
+    }
+}
+
+private struct AssistantReplyEnvelope: Decodable {
+    let thinkingProcess: String?
+    let final: FinalContainer
+
+    enum CodingKeys: String, CodingKey {
+        case thinkingProcess = "thinking_process"
+        case final = "final_response"
+    }
+
+    struct FinalContainer: Decodable {
+        let reasoningBrief: String?
+        let finalResponse: AssistantReplyDTO.FinalResponse
+
+        enum CodingKeys: String, CodingKey {
+            case reasoningBrief = "reasoning_brief"
+            case finalResponse = "final_response"
+        }
+    }
+
+    var domainModel: AssistantReply {
+        let dto = AssistantReplyDTO(reasoningBrief: final.reasoningBrief, finalResponse: final.finalResponse)
+        return dto.domainModel
     }
 }
 

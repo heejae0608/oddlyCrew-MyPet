@@ -19,6 +19,8 @@ final class ChatViewModel: ObservableObject {
     @Published var alert: AppAlert?
     @Published var isConversationCompleted: Bool = false
     @Published var canShowContinueButton: Bool = false
+    @Published private(set) var continueButtonTitle: String = "대화 계속하기"
+    @Published private(set) var newConversationButtonTitle: String = "대화 새로하기"
 
     private let session: SessionViewModel
     private let chatUseCase: ChatUseCaseInterface
@@ -57,6 +59,7 @@ final class ChatViewModel: ObservableObject {
         if let cachedState = messagesByPet[petId] {
             messages = cachedState.messages
             updateCompletionFlags(with: cachedState.status)
+            updateButtonTitles(for: pet)
             return
         }
 
@@ -67,10 +70,12 @@ final class ChatViewModel: ObservableObject {
                     self.messages = []
                     self.messagesByPet[petId] = CachedChatState(messages: [], status: history.status)
                     self.updateCompletionFlags(with: history.status)
+                    self.updateButtonTitles(for: pet)
                 } else {
                     self.messages = history.messages
                     self.messagesByPet[petId] = CachedChatState(messages: history.messages, status: history.status)
                     self.updateCompletionFlags(with: history.status)
+                    self.updateButtonTitles(for: pet)
                     Log.info("🔄 이전 대화 세션 불러옴 - 메시지 수: \(history.messages.count)", tag: "Chat")
                 }
             }
@@ -80,6 +85,7 @@ final class ChatViewModel: ObservableObject {
     func updateFromHistoryDetailView(updateData: UpdateHistoryToChat) {
         self.messages = updateData.messages
         self.selectedPet = updateData.selectedPet
+        updateButtonTitles(for: updateData.selectedPet)
     }
 
     func sendMessage() {
@@ -171,6 +177,7 @@ final class ChatViewModel: ObservableObject {
         selectedPet = pet
         latestAssistantReply = nil  // 펫 변경 시 이전 AI 응답 정보 초기화
         loadHistory()
+        updateButtonTitles(for: pet)
 
         Log.info("📜 히스토리 로드 완료 - 메시지 수: \(messages.count)개", tag: "Chat")
     }
@@ -259,6 +266,7 @@ final class ChatViewModel: ObservableObject {
         messageText = ""
         isConversationCompleted = false
         canShowContinueButton = false
+        updateButtonTitles(for: selectedPet)
 
         // 백엔드에서 새 세션 준비
         chatUseCase.startNewConversation(for: petId)
@@ -291,9 +299,38 @@ private extension ChatViewModel {
 
     func insertWelcomeMessageIfNeeded() {
         guard messages.isEmpty else { return }
-        let message = ChatMessage.assistant("궁금한 것이 있으면 물어보세요!", petId: selectedPet?.id)
+        let message = ChatMessage.assistant(makeWelcomeMessage(for: selectedPet), petId: selectedPet?.id)
         appendToTimeline(message)
         updateCachedStatus(.inProgress)
+    }
+
+    func makeWelcomeMessage(for pet: Pet?) -> String {
+        guard let pet else {
+            return "보호자님, 궁금한 점을 말씀해 주시면 상담을 도와드릴게요."
+        }
+
+        let species = pet.species.lowercased()
+
+        if species.contains("강아지") || species.contains("개") || species.contains("dog") {
+            return "보호자님, \(pet.name)의 상황이 궁금하시다면 언제든 말씀해 주세요."
+        }
+
+        if species.contains("고양이") || species.contains("cat") {
+            return "집사님, \(pet.name)에 대해 알고 싶은 점이 있으시면 언제든 말씀해 주세요."
+        }
+
+        return "\(pet.name)에 관해 궁금하신 점이 있다면 언제든 말씀해 주세요."
+    }
+
+    func updateButtonTitles(for pet: Pet?) {
+        guard let pet else {
+            continueButtonTitle = "상담 이어가기"
+            newConversationButtonTitle = "새 상담 시작하기"
+            return
+        }
+
+        continueButtonTitle = "\(pet.name) 상담 이어가기"
+        newConversationButtonTitle = "\(pet.name) 새 상담 시작하기"
     }
 }
 
