@@ -232,7 +232,6 @@ struct PetProfileForm: View {
 private struct SectionContainer<Content: View>: View {
     let title: String
     private let content: Content
-    @Environment(\.colorScheme) private var colorScheme
 
     init(title: String, @ViewBuilder content: () -> Content) {
         self.title = title
@@ -252,7 +251,7 @@ private struct SectionContainer<Content: View>: View {
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(AppColor.cardSurface)
-                .shadow(color: shadowColor, radius: 12, x: 0, y: 6)
+                .shadow(color: AppColor.sectionShadow, radius: 12, x: 0, y: 6)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -260,9 +259,6 @@ private struct SectionContainer<Content: View>: View {
         )
     }
 
-    private var shadowColor: Color {
-        colorScheme == .dark ? Color.black.opacity(0.35) : Color.black.opacity(0.05)
-    }
 }
 
 #if DEBUG

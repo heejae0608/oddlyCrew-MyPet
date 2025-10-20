@@ -49,14 +49,14 @@ struct HistoryDetailView: View {
     var body: some View {
         if messagePreviews.isEmpty {
             Text("대화 기록 없음")
-                .font(.body)
-                .foregroundColor(.secondary)
+                .appFont(17)
+                .foregroundStyle(AppColor.subText)
                 .italic()
         } else {
-            HistoryMessageList
+                    HistoryMessageList
                 .navigationTitle("상담 내역")
-                .navigationBarTitleDisplayMode(.inline)
-                .navigationBarBackButtonHidden(true)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .navigationBarBackButtonHidden(true)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         Button {
@@ -98,32 +98,64 @@ struct HistoryDetailView: View {
                     Spacer(minLength: 8)
                     
                     ForEach(messagePreviews) { message in
-                        if conversation.isCompleted == true {
-                            
-                        } else {
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack(spacing: 6) {
-                                    Text(message.role == .user ? "사용자" : "AI")
-                                        .font(.caption2)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(message.role == .user ? .blue : .green)
-                                    Text(message.timestamp, style: .time)
-                                        .font(.caption2)
-                                        .foregroundColor(.gray)
-                                }
-                                Text(message.content)
-                                    .font(.body)
-                                    .foregroundColor(.primary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .padding(12)
-                                    .background(message.role == .user ? Color.blue.opacity(0.1) : Color.green.opacity(0.1))
-                                    .cornerRadius(12)
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 6) {
+                                Text(senderLabel(for: message))
+                                    .appFont(11, weight: .semibold)
+                                    .foregroundStyle(senderAccentColor(for: message))
+                                Text(message.timestamp, style: .time)
+                                    .appFont(11)
+                                    .foregroundStyle(AppColor.subText)
                             }
-                            .padding(.horizontal, 16)
+                            Text(message.content)
+                                .appFont(17)
+                                .foregroundStyle(AppColor.text)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(12)
+                                .background(bubbleBackground(for: message))
+                                .cornerRadius(12)
                         }
+                        .padding(.horizontal, 16)
                     }
                 }
             }
+        }
+    }
+}
+
+private extension HistoryDetailView {
+    func senderLabel(for message: ChatMessage) -> String {
+        switch message.role {
+        case .user:
+            return "사용자"
+        case .assistant:
+            return selectedPet.name.isEmpty
+                ? "돌봄 파트너"
+                : "\(selectedPet.name) 돌봄 파트너"
+        case .system:
+            return "시스템"
+        }
+    }
+
+    func senderAccentColor(for message: ChatMessage) -> Color {
+        switch message.role {
+        case .user:
+            return AppColor.info
+        case .assistant:
+            return AppColor.success
+        case .system:
+            return AppColor.mutedGray
+        }
+    }
+
+    func bubbleBackground(for message: ChatMessage) -> Color {
+        switch message.role {
+        case .user:
+            return AppColor.info.opacity(0.12)
+        case .assistant:
+            return AppColor.success.opacity(0.12)
+        case .system:
+            return AppColor.mutedGray.opacity(0.12)
         }
     }
 }

@@ -37,7 +37,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AppColor.lightGray
+                AppColor.surfaceBackground
                     .ignoresSafeArea()
 
                 ScrollView(.vertical, showsIndicators: false) {

@@ -32,6 +32,6 @@ struct TipCard: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(AppColor.tipCardBackground)
         )
-        .shadow(color: Color.black.opacity(0.12), radius: 10, x: 0, y: 6)
+        .shadow(color: AppColor.shadowSoft, radius: 10, x: 0, y: 6)
     }
 }

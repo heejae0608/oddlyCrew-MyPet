@@ -10,4 +10,5 @@ extension View {
     func appFont(_ size: CGFloat, weight: Font.Weight = .regular) -> some View {
         font(.app(size, weight: weight))
     }
+
 }

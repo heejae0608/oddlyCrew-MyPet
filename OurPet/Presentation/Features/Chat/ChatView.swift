@@ -16,25 +16,30 @@ struct ChatView: View {
 
     var body: some View {
         NavigationView {
-            if session.pets.isNotEmpty {
-                VStack(spacing: 0) {
-                    // 상단 고정 영역
+            ZStack {
+                AppColor.surfaceBackground
+                    .ignoresSafeArea()
+
+                if session.pets.isNotEmpty {
                     VStack(spacing: 0) {
-                        petSelectionBar(pets: session.pets)
-                        Divider()
+                        // 상단 고정 영역
+                        VStack(spacing: 0) {
+                            petSelectionBar(pets: session.pets)
+                            Divider()
+                        }
+                        .background(AppColor.surfaceBackground)
+
+                        // 중간 스크롤 영역 (메시지 리스트)
+                        messageList
+
+                        // 하단 고정 영역 (입력창)
+                        messageComposer
+                            .background(AppColor.surfaceBackground)
                     }
-                    .background(Color(.systemBackground))
-
-                    // 중간 스크롤 영역 (메시지 리스트)
-                    messageList
-
-                    // 하단 고정 영역 (입력창)
-                    messageComposer
-                        .background(Color(.systemBackground))
-                }
-            } else {
-                MissingPetInfoView {
-                    showingPetRegistration = true
+                } else {
+                    MissingPetInfoView {
+                        showingPetRegistration = true
+                    }
                 }
             }
         }
@@ -48,7 +53,7 @@ struct ChatView: View {
                         viewModel.startNewConversation()
                     } label: {
                         Image(systemName: "plus.bubble")
-                            .foregroundColor(.blue)
+                            .foregroundStyle(AppColor.info)
                     }
                     .accessibilityLabel("새 대화 시작")
                 }
@@ -66,6 +71,7 @@ struct ChatView: View {
             PetRegistrationView()
                 .environmentObject(session)
         }
+        .background(AppColor.surfaceBackground.ignoresSafeArea())
     }
 
     private func petSelectionBar(pets: [Pet]) -> some View {
@@ -80,7 +86,7 @@ struct ChatView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(AppColor.lightGray)
+                .background(AppColor.white.opacity(0.95))
                 .cornerRadius(20)
             }
             .foregroundColor(AppColor.ink)
@@ -172,8 +178,8 @@ struct ChatView: View {
             ProgressView()
                 .scaleEffect(0.8)
             Text("상담 내용을 정리하고 있어요...")
-                .font(.caption)
-                .foregroundColor(.gray)
+                .appFont(12)
+                .foregroundStyle(AppColor.subText)
         }
         .padding()
     }
@@ -189,8 +195,7 @@ struct ChatView: View {
                                 viewModel.continueConversation()
                             } label: {
                                 Text(viewModel.continueButtonTitle)
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
+                                    .appFont(15, weight: .semibold)
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.borderedProminent)
@@ -201,8 +206,7 @@ struct ChatView: View {
                             viewModel.startNewConversation()
                         } label: {
                             Text(viewModel.newConversationButtonTitle)
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
+                                .appFont(15, weight: .semibold)
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.bordered)
@@ -211,16 +215,16 @@ struct ChatView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(Color(.systemBackground))
+                .background(AppColor.surfaceBackground)
             }
 
             Divider()
-                .background(Color(.separator))
+                .background(AppColor.divider)
 
             HStack(alignment: .bottom, spacing: 12) {
                 // 텍스트 입력 필드
                 TextField(
-                    "궁금한 점을 입력해 주세요...",
+                    "무엇을 도와드릴까요? 편하게 말씀해 주세요",
                     text: $viewModel.messageText,
                     axis: .vertical
                 )
@@ -233,7 +237,7 @@ struct ChatView: View {
                     }
                     isMessageFieldFocused = false
                 }
-                .font(.system(size: 16, weight: .regular))
+                .appFont(16)
                 .disabled(viewModel.isLoading)
 
                 // 전송 버튼
@@ -242,7 +246,7 @@ struct ChatView: View {
                     isMessageFieldFocused = false
                 } label: {
                     Image(systemName: viewModel.isLoading ? "stop.circle.fill" : "paperplane.fill")
-                        .font(.title2)
+                        .font(.system(size: 22, weight: .regular, design: .rounded))
                         .foregroundColor(
                             viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading
                             ? AppColor.ink : AppColor.orange
@@ -253,7 +257,7 @@ struct ChatView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(Color(.systemBackground))
+            .background(AppColor.surfaceBackground)
         }
         .disabled(session.pets.isEmpty)
     }
@@ -269,13 +273,13 @@ private struct PetSelectionView: View {
         NavigationView {
             List {
                 Section {
-                    Label {
+                   Label {
                         Text("전체 히스토리")
                     } icon: {
                         Image(systemName: "clock.circle.fill")
                             .resizable()
                             .frame(width: 25, height: 25)
-                            .foregroundColor(AppColor.orange)
+                            .foregroundStyle(AppColor.orange)
                             .scaledToFit()
                     }
                     .contentShape(Rectangle())
@@ -290,27 +294,27 @@ private struct PetSelectionView: View {
                     HStack {
                         Image(systemName: "pawprint.circle.fill")
                             .resizable()
-                            .foregroundColor(AppColor.orange)
+                            .foregroundStyle(AppColor.orange)
                             .frame(width: 25, height: 25)
                             .scaledToFit()
 
                         VStack(alignment: .leading) {
                             Text(pet.name)
-                                .font(.headline)
-                                .foregroundColor(AppColor.ink)
-                            Text("\(pet.species) • \(pet.calculatedAge)살")
-                                .font(.caption)
-                                .foregroundColor(.gray)
+                                .appFont(17, weight: .semibold)
+                                .foregroundStyle(AppColor.ink)
+                           Text("\(pet.species) • \(pet.calculatedAge)살")
+                               .appFont(12)
+                                .foregroundStyle(AppColor.subText)
                         }
 
                         Spacer()
 
-                        if selectedPet?.id == pet.id {
-                            Image(systemName: "checkmark.circle.fill")
-                                .resizable()
-                                .foregroundColor(AppColor.orange)
-                                .frame(width: 25, height: 25)
-                                .scaledToFit()
+                            if selectedPet?.id == pet.id {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .resizable()
+                                    .foregroundStyle(AppColor.orange)
+                                    .frame(width: 25, height: 25)
+                                    .scaledToFit()
                         }
                     }
                     .contentShape(Rectangle())
@@ -327,7 +331,7 @@ private struct PetSelectionView: View {
                     Button("닫기") {
                         dismiss()
                     }
-                    .foregroundColor(AppColor.ink)
+                    .foregroundStyle(AppColor.ink)
                 }
             }
         }
@@ -341,26 +345,25 @@ private struct MissingPetInfoView: View {
         VStack(spacing: 24) {
             Image(systemName: "pawprint.circle")
                 .font(.system(size: 72))
-                .foregroundColor(AppColor.orange)
+                .foregroundStyle(AppColor.orange)
 
             VStack(spacing: 8) {
                 Text("반려동물 정보를 먼저 등록해주세요")
-                    .font(.title3)
-                    .fontWeight(.semibold)
+                    .appFont(20, weight: .semibold)
                 Text("AI 상담을 이용하려면 반려동물의 기본 정보가 필요합니다.")
-                    .font(.footnote)
-                    .foregroundColor(.gray)
+                    .appFont(13)
+                    .foregroundStyle(AppColor.subText)
             }
 
             Button {
                 onRegister()
             } label: {
                 Text("반려동물 등록하기")
-                    .font(.headline)
+                    .appFont(17, weight: .semibold)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
                     .background(AppColor.orange)
-                    .foregroundColor(.white)
+                    .foregroundStyle(AppColor.white)
                     .cornerRadius(12)
             }
         }
@@ -379,14 +382,15 @@ struct ChatMessageView: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(message.content)
                         .padding()
-                        .background(Color.gray.opacity(0.1))
-                        .foregroundColor(AppColor.ink)
+                        .background(AppColor.chatUserBubbleBackground)
+                        .foregroundColor(AppColor.chatUserBubbleText)
                         .cornerRadius(16, corners: [.topLeft, .topRight, .bottomLeft])
+                        .shadow(color: AppColor.shadowSoft, radius: 4, x: 0, y: 2)
                         .fixedSize(horizontal: false, vertical: true)
 
                     Text(message.timestamp, style: .time)
-                        .font(.caption2)
-                        .foregroundColor(.gray)
+                        .appFont(11)
+                        .foregroundStyle(AppColor.subText)
                 }
                 .frame(maxWidth: UIScreen.main.bounds.width * 0.7, alignment: .trailing)
             } else {
@@ -411,15 +415,16 @@ struct ChatMessageView: View {
                         }
                         
                         Text(assistantDisplayName(for: chatViewModel.selectedPet))
-                            .font(.caption)
+                            .appFont(12)
                             .foregroundColor(AppColor.ink)
                     }
                     // 메인 메시지
                     Text(message.content)
                         .padding()
-                        .background(AppColor.orange)
-                        .foregroundColor(.white)
+                        .background(AppColor.chatAssistantBubbleBackground)
+                        .foregroundColor(AppColor.chatAssistantBubbleText)
                         .cornerRadius(16, corners: [.topLeft, .topRight, .bottomRight])
+                        .shadow(color: AppColor.shadowSoft, radius: 4, x: 0, y: 2)
                         .fixedSize(horizontal: false, vertical: true)
 
                     // AI 응답 상세 정보 (최신 응답인 경우만)
@@ -429,15 +434,14 @@ struct ChatMessageView: View {
                         // 추가 질문들
                         if !reply.questions.isEmpty {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("추가 질문")
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.orange)
+                               Text("추가 질문")
+                                    .appFont(12, weight: .semibold)
+                                    .foregroundStyle(AppColor.orange)
 
                                 ForEach(reply.questions, id: \.self) { question in
                                     Text("• \(question)")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .appFont(12)
+                                        .foregroundStyle(AppColor.subText)
                                 }
                             }
                             .padding(.vertical, 4)
@@ -446,19 +450,18 @@ struct ChatMessageView: View {
                         // 체크리스트
                         if !reply.checklist.isEmpty {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("확인사항")
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.blue)
+                               Text("확인사항")
+                                    .appFont(12, weight: .semibold)
+                                    .foregroundStyle(AppColor.info)
 
                                 ForEach(reply.checklist, id: \.item) { item in
                                     HStack {
                                         Image(systemName: importanceIcon(item.importance))
-                                            .foregroundColor(importanceColor(item.importance))
-                                            .font(.caption2)
+                                            .foregroundStyle(importanceColor(item.importance))
+                                            .font(.system(size: 11, weight: .regular, design: .rounded))
                                         Text(item.item)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
+                                            .appFont(12)
+                                            .foregroundStyle(AppColor.subText)
                                     }
                                 }
                             }
@@ -468,19 +471,18 @@ struct ChatMessageView: View {
                         // 다음 단계
                         if !reply.nextSteps.isEmpty {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("권장 조치")
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.green)
+                               Text("권장 조치")
+                                    .appFont(12, weight: .semibold)
+                                    .foregroundStyle(AppColor.success)
 
                                 ForEach(reply.nextSteps, id: \.step) { step in
                                     HStack {
                                         Image(systemName: importanceIcon(step.importance))
-                                            .foregroundColor(importanceColor(step.importance))
-                                            .font(.caption2)
+                                            .foregroundStyle(importanceColor(step.importance))
+                                            .font(.system(size: 11, weight: .regular, design: .rounded))
                                         Text(step.step)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
+                                            .appFont(12)
+                                            .foregroundStyle(AppColor.subText)
                                     }
                                 }
                             }
@@ -492,10 +494,10 @@ struct ChatMessageView: View {
                             if reply.urgencyLevel != .unknown {
                                 HStack(spacing: 4) {
                                     Image(systemName: "exclamationmark.triangle.fill")
-                                        .foregroundColor(reply.urgencyLevel.accentColor)
-                                    Text("긴급도: \(reply.urgencyLevel.displayName)")
-                                        .font(.caption2)
-                                        .foregroundColor(reply.urgencyLevel.accentColor)
+                                        .foregroundStyle(reply.urgencyLevel.accentColor)
+                                   Text("긴급도: \(reply.urgencyLevel.displayName)")
+                                        .appFont(11)
+                                        .foregroundStyle(reply.urgencyLevel.accentColor)
                                 }
                             }
 
@@ -504,10 +506,10 @@ struct ChatMessageView: View {
                             if reply.vetConsultationNeeded {
                                 HStack(spacing: 4) {
                                     Image(systemName: "stethoscope")
-                                        .foregroundColor(.red)
-                                    Text("수의사 상담 권장")
-                                        .font(.caption2)
-                                        .foregroundColor(.red)
+                                        .foregroundStyle(AppColor.danger)
+                                   Text("수의사 상담 권장")
+                                        .appFont(11)
+                                        .foregroundStyle(AppColor.danger)
                                 }
                             }
                         }
@@ -519,19 +521,18 @@ struct ChatMessageView: View {
                                     Spacer()
                                     HStack(spacing: 4) {
                                         Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.green)
-                                        Text("상담 완료")
-                                            .font(.caption2)
-                                            .foregroundColor(.green)
-                                            .fontWeight(.medium)
+                                            .foregroundStyle(AppColor.success)
+                                       Text("상담 완료")
+                                            .appFont(11, weight: .medium)
+                                            .foregroundStyle(AppColor.success)
                                     }
                                 }
 
                                 HStack {
                                     Spacer()
-                                    Text("필요하실 때 다시 상담을 이어가실 수 있어요.")
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
+                                   Text("필요하실 때 다시 상담을 이어가실 수 있어요.")
+                                        .appFont(11)
+                                        .foregroundStyle(AppColor.subText)
                                         .italic()
                                 }
                             }
@@ -539,9 +540,9 @@ struct ChatMessageView: View {
                         }
                     }
 
-                    Text(message.timestamp, style: .time)
-                        .font(.caption2)
-                        .foregroundColor(.gray)
+                   Text(message.timestamp, style: .time)
+                        .appFont(11)
+                        .foregroundStyle(AppColor.subText)
                 }
                 .frame(maxWidth: UIScreen.main.bounds.width * 0.8, alignment: .leading)
                 Spacer()
@@ -560,10 +561,10 @@ struct ChatMessageView: View {
 
     private func importanceColor(_ importance: String) -> Color {
         switch importance.lowercased() {
-        case "high": return .red
-        case "medium": return .orange
-        case "low": return .blue
-        default: return .gray
+        case "high": return AppColor.danger
+        case "medium": return AppColor.orange
+        case "low": return AppColor.info
+        default: return AppColor.subText
         }
     }
 }
@@ -578,14 +579,14 @@ struct EmptyChatView: View {
         let species = pet.species.lowercased()
 
         if species.contains("강아지") || species.contains("개") || species.contains("dog") {
-            return "보호자님, \(name)에 대해 궁금한 점을 알려주세요"
+            return "보호자님, \(name)에 대해 어떤 이야기를 들려주실까요?"
         }
 
         if species.contains("고양이") || species.contains("cat") {
             return "집사님, \(name)에 대해 알고 싶은 것이 있으신가요?"
         }
 
-        return "\(name)에 대해 궁금한 점을 알려주세요"
+        return "\(name)에 대해 편하게 이야기해 주세요"
     }
 
     private var subtitleText: String {
@@ -600,43 +601,41 @@ struct EmptyChatView: View {
         }
 
         if species.contains("고양이") || species.contains("cat") {
-            return "사소한 변화라도 궁금한 점이 있다면 편하게 말씀해 주세요."
+            return "사소한 변화라도 편하게 들려주시면 함께 살펴볼게요."
         }
 
-        return "식습관, 행동, 건강 상태에 대해 궁금한 점이 있다면 알려주세요."
+        return "식습관, 행동, 건강 상태에 대해 자유롭게 이야기해 주세요."
     }
 
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "message.circle")
                 .font(.system(size: 80))
-                .foregroundColor(AppColor.orange)
+                .foregroundStyle(AppColor.orange)
 
             Text(titleText)
-                .font(.title2)
-                .fontWeight(.medium)
-                .foregroundColor(AppColor.ink)
+                .appFont(22, weight: .medium)
+                .foregroundStyle(AppColor.ink)
 
             Text(subtitleText)
-                .font(.subheadline)
-                .foregroundColor(.gray)
+                .appFont(15)
+                .foregroundStyle(AppColor.subText)
                 .multilineTextAlignment(.center)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("예시 질문:")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.gray)
+                    .appFont(12, weight: .semibold)
+                    .foregroundStyle(AppColor.subText)
 
                 Text("• 반려동물이 갑자기 숨어있어요")
                 Text("• 최근 식사량이 줄어든 것 같아요")
                 Text("• 검진이나 예방접종은 언제 해야 할까요?")
             }
-            .font(.caption)
-            .foregroundColor(.gray)
-            .padding()
-            .background(Color.gray.opacity(0.05))
-            .cornerRadius(12)
+            .appFont(12)
+            .foregroundStyle(AppColor.subText)
+    .padding()
+    .background(AppColor.mutedGray.opacity(0.15))
+    .cornerRadius(12)
         }
         .padding()
     }
@@ -667,11 +666,11 @@ private extension UrgencyLevel {
 
     var accentColor: Color {
         switch self {
-        case .low: return .green
-        case .medium: return .orange
-        case .high: return .red
-        case .critical: return .red
-        case .unknown: return .gray
+        case .low: return AppColor.success
+        case .medium: return AppColor.orange
+        case .high: return AppColor.danger
+        case .critical: return AppColor.danger
+        case .unknown: return AppColor.subText
         }
     }
 }

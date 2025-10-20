@@ -36,25 +36,30 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationView {
-            VStack {
-                HStack {
-                    Text("마이")
-                        .font(.system(size: 24, weight: .bold))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 10)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 32)
-                
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack {
-                        userInfo
-                            .padding(.vertical, 10)
-                        petInfo
-                            .padding(.vertical, 10)
-                        appInfo
-                            .padding(.vertical, 12)
-                        appAccountInfo
+            ZStack {
+                AppColor.surfaceBackground
+                    .ignoresSafeArea()
+
+                VStack {
+                    HStack {
+                        Text("마이")
+                            .appFont(24, weight: .bold)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 10)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 32)
+
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack {
+                            userInfo
+                                .padding(.vertical, 10)
+                            petInfo
+                                .padding(.vertical, 10)
+                            appInfo
+                                .padding(.vertical, 12)
+                            appAccountInfo
+                        }
                     }
                 }
             }
@@ -77,12 +82,12 @@ struct SettingsView: View {
             .overlay {
                 if session.appState == .loading {
                     ZStack {
-                        Color.black.opacity(0.3)
+                        AppColor.overlayDim
                             .ignoresSafeArea()
                         ProgressView()
                             .progressViewStyle(.circular)
                             .padding()
-                            .background(Color(.systemBackground))
+                            .background(AppColor.surfaceBackground)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
@@ -119,6 +124,7 @@ struct SettingsView: View {
                 Task { await viewModel.refreshConsultationCount(pets: pets) }
             }
         }
+        .background(AppColor.surfaceBackground.ignoresSafeArea())
         
 //        VStack {
 //            NavigationView {
@@ -206,22 +212,22 @@ struct SettingsView: View {
         Section("사용자 정보") {
             HStack {
                 Image(systemName: "person.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(.blue)
+                    .appFont(22)
+                    .foregroundStyle(AppColor.info)
 
                 VStack(alignment: .leading) {
                     Text(user.name)
-                        .font(.headline)
+                        .appFont(17, weight: .semibold)
 
                     if let email = user.email {
                         Text(email)
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                            .appFont(12)
+                            .foregroundStyle(AppColor.subText)
                     }
 
                     Text("가입일: \(formattedJoinDate(user.registrationDate))")
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                        .appFont(12)
+                        .foregroundStyle(AppColor.subText)
                 }
 
                 Spacer()
@@ -243,12 +249,12 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 6) {
                 if let user = viewModel.user {
                     Text(user.name)
-                        .font(.system(size: 18, weight: .medium))
-                    
+                        .appFont(18, weight: .medium)
+
                     if let email = user.email {
                         Text(email)
-                            .font(.system(size: 14, weight: .light))
-                            .foregroundColor(.gray)
+                            .appFont(14, weight: .light)
+                            .foregroundStyle(AppColor.subText)
                     }
                 }
             }
@@ -261,26 +267,26 @@ struct SettingsView: View {
     private var petInfo: some View {
         VStack(alignment: .leading) {
             Text("반려동물")
-                .font(.system(size: 16, weight: .semibold))
+                .appFont(16, weight: .semibold)
                 .foregroundStyle(.appWhite)
                 .padding(.horizontal, 12)
                 .padding(.top, 12)
             
             Divider()
                 .frame(height: 1)
-                .background(.appLightGray)
+                .background(AppColor.surfaceBackground)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
             
             HStack {
                 Text("등록된 반려동물")
-                    .font(.system(size: 14, weight: .semibold))
+                    .appFont(14, weight: .semibold)
                     .foregroundStyle(.appWhite)
                 
                 Spacer()
                 
                 Text("\(session.pets.count) 마리")
-                    .font(.system(size: 14, weight: .medium))
+                    .appFont(14, weight: .medium)
                     .foregroundStyle(.appWhite)
             }
             .padding(.horizontal, 12)
@@ -288,13 +294,13 @@ struct SettingsView: View {
             
             HStack {
                 Text("반려동물 상담횟수")
-                    .font(.system(size: 14, weight: .semibold))
+                    .appFont(14, weight: .semibold)
                     .foregroundStyle(.appWhite)
                 
                 Spacer()
                 
                 Text("\(viewModel.consultationCount)회")
-                    .font(.system(size: 14, weight: .medium))
+                    .appFont(14, weight: .medium)
                     .foregroundStyle(.appWhite)
             }
             .padding(.horizontal, 12)
@@ -311,13 +317,13 @@ struct SettingsView: View {
             
             HStack {
                 Text("앱 버전")
-                    .font(.system(size: 14, weight: .regular))
+                    .appFont(14)
                     .foregroundStyle(.black)
                 
                 Spacer()
                 
                 Text(appVersion)
-                    .font(.system(size: 14, weight: .regular))
+                    .appFont(14)
                     .foregroundStyle(.gray)
             }
             .padding(.horizontal, 16)
@@ -326,7 +332,7 @@ struct SettingsView: View {
             
             HStack {
                 Text("AppStore에서 보기")
-                    .font(.system(size: 14, weight: .regular))
+                    .appFont(14)
                     .foregroundStyle(.black)
                 
                 Spacer()
@@ -343,7 +349,7 @@ struct SettingsView: View {
             
             HStack {
                 Text("개발자 문의")
-                    .font(.system(size: 14, weight: .regular))
+                    .appFont(14)
                     .foregroundStyle(.black)
                 
                 Spacer()
@@ -363,20 +369,20 @@ struct SettingsView: View {
             } label: {
                 HStack {
                     Text("오픈소스 라이선스")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundStyle(.black)
+                        .appFont(14)
+                        .foregroundStyle(AppColor.ink)
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .foregroundStyle(.black)
+                        .foregroundStyle(AppColor.ink.opacity(0.7))
                 }
                 .contentShape(Rectangle())
                 .padding(.horizontal, 16)
                 .padding(.bottom, 20)
             }
         }
-        .background(.appWhite)
+        .background(AppColor.white)
         .clipShape(RoundedRectangle(cornerRadius: 8))
-        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 0)
+        .shadow(color: AppColor.shadowMedium, radius: 8, x: 0, y: 0)
         .padding(.horizontal, 20)
     }
     
@@ -387,14 +393,14 @@ struct SettingsView: View {
                 showingLogoutAlert = true
             } label: {
                 Text("로그아웃")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.red)
+                    .appFont(16, weight: .semibold)
+                    .foregroundStyle(AppColor.danger)
                     .frame(maxWidth: .infinity, minHeight: 56)
                     .contentShape(Rectangle())
             }
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(.appOrange, lineWidth: 1)
+                    .stroke(AppColor.orange, lineWidth: 1)
             )
             .padding(.bottom, 8)
             
@@ -402,9 +408,9 @@ struct SettingsView: View {
                 showingDeleteAccountAlert = true
             } label: {
                 Text("회원탈퇴")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.gray)
-                    .underline(true, color: .gray)
+                    .appFont(14, weight: .medium)
+                    .foregroundStyle(AppColor.subText)
+                    .underline(true, color: AppColor.subText)
             }
 
             
@@ -417,20 +423,20 @@ struct SettingsView: View {
         Section("반려동물 통계") {
             HStack {
                 Image(systemName: "pawprint.fill")
-                    .foregroundColor(.green)
+                    .foregroundStyle(AppColor.success)
                 Text("등록된 반려동물")
                 Spacer()
                 Text("\(session.pets.count)마리")
-                    .foregroundColor(.gray)
+                    .foregroundStyle(AppColor.subText)
             }
 
             HStack {
                 Image(systemName: "message.fill")
-                    .foregroundColor(.orange)
+                    .foregroundStyle(AppColor.orange)
                 Text("상담 횟수")
                 Spacer()
                 Text("\(viewModel.consultationCount)회")
-                    .foregroundColor(.gray)
+                    .foregroundStyle(AppColor.subText)
             }
         }
     }
@@ -439,23 +445,23 @@ struct SettingsView: View {
         Section("앱 정보") {
             HStack {
                 Image(systemName: "info.circle")
-                    .foregroundColor(.blue)
+                    .foregroundStyle(AppColor.info)
                 Text("버전")
                 Spacer()
                 Text(appVersion)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(AppColor.subText)
             }
 
             if let url = viewModel.appStoreURL {
                 Link(destination: url) {
                     HStack {
                         Image(systemName: "link")
-                            .foregroundColor(.blue)
+                            .foregroundStyle(AppColor.info)
                         Text("앱스토어에서 보기")
                         Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .foregroundColor(.gray)
-                            .font(.caption)
+                       Image(systemName: "arrow.up.right")
+                           .foregroundStyle(AppColor.subText)
+                            .font(.system(size: 12, weight: .regular, design: .rounded))
                     }
                 }
             }
@@ -466,11 +472,11 @@ struct SettingsView: View {
             } label: {
                 HStack {
                     Image(systemName: "envelope.fill")
-                        .foregroundColor(.purple)
+                        .foregroundStyle(AppColor.accentPurple)
                     Text("개발자 문의")
                     Spacer()
                     Text(viewModel.developerEmail)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(AppColor.subText)
                 }
             }
             .buttonStyle(.plain)
@@ -480,20 +486,20 @@ struct SettingsView: View {
             } label: {
                 HStack {
                     Image(systemName: "doc.text.magnifyingglass")
-                        .foregroundColor(.blue)
+                        .foregroundStyle(AppColor.info)
                     Text("오픈소스 라이선스")
                     Spacer()
                 }
             }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("© 2025 OurPet")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                Text("All rights reserved.")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
+           VStack(alignment: .leading, spacing: 2) {
+               Text("© 2025 OurPet")
+                    .appFont(12)
+                    .foregroundStyle(AppColor.subText)
+               Text("All rights reserved.")
+                    .appFont(12)
+                    .foregroundStyle(AppColor.subText)
+           }
         }
     }
 
@@ -504,9 +510,9 @@ struct SettingsView: View {
             } label: {
                 HStack {
                     Image(systemName: "rectangle.portrait.and.arrow.right")
-                        .foregroundColor(.red)
+                        .foregroundStyle(AppColor.danger)
                     Text("로그아웃")
-                        .foregroundColor(.red)
+                        .foregroundStyle(AppColor.danger)
                 }
             }
 
@@ -515,9 +521,9 @@ struct SettingsView: View {
             } label: {
                 HStack {
                     Image(systemName: "person.crop.circle.badge.xmark")
-                        .foregroundColor(.red)
+                        .foregroundStyle(AppColor.danger)
                     Text("계정 삭제")
-                        .foregroundColor(.red)
+                        .foregroundStyle(AppColor.danger)
                 }
             }
         }
@@ -526,16 +532,16 @@ struct SettingsView: View {
     private var cautionSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.orange)
+               HStack {
+                   Image(systemName: "exclamationmark.triangle.fill")
+                       .foregroundStyle(AppColor.orange)
                     Text("중요 안내")
-                        .fontWeight(.semibold)
+                        .appFont(14, weight: .semibold)
                 }
 
                 Text("이 앱의 AI 상담은 참고용으로만 사용하시고, 실제 의료 진단이나 치료를 대체할 수 없습니다. 반려동물에게 응급상황이나 심각한 증상이 나타나면 즉시 동물병원에 방문해주세요.")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                    .appFont(12)
+                    .foregroundStyle(AppColor.subText)
             }
             .padding(.vertical, 4)
         }

@@ -306,7 +306,7 @@ private extension ChatViewModel {
 
     func makeWelcomeMessage(for pet: Pet?) -> String {
         guard let pet else {
-            return "보호자님, 궁금한 점을 말씀해 주시면 상담을 도와드릴게요."
+            return "보호자님, 편하게 이야기해 주시면 상담을 도와드릴게요."
         }
 
         let species = pet.species.lowercased()

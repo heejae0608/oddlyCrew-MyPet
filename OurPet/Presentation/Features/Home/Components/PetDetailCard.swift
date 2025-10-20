@@ -27,7 +27,7 @@ struct PetDetailCard: View {
                     RoundedRectangle(cornerRadius: 32, style: .continuous)
                         .stroke(AppColor.cardBorder.opacity(0.3), lineWidth: 1)
                 )
-                .shadow(color: Color.black.opacity(0.18), radius: 16, x: 0, y: 12)
+                .shadow(color: AppColor.shadowDeep, radius: 16, x: 0, y: 12)
 
             VStack(alignment: .leading, spacing: 24) {
                 headerSection
@@ -47,16 +47,16 @@ struct PetDetailCard: View {
                 HStack(spacing: 12) {
                     Text(pet.name)
                         .appFont(26, weight: .bold)
-                        .foregroundColor(.white)
+                        .foregroundStyle(AppColor.white)
 
                     Button(action: onEdit) {
                         Image(systemName: "square.and.pencil")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.9))
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundStyle(AppColor.white.opacity(0.9))
                             .padding(8)
                             .background(
                                 Circle()
-                                    .fill(Color.white.opacity(0.18))
+                                    .fill(AppColor.white.opacity(0.18))
                             )
                     }
                     .buttonStyle(.plain)
@@ -65,7 +65,7 @@ struct PetDetailCard: View {
 
                 Text(speciesLabel)
                     .appFont(15, weight: .medium)
-                    .foregroundColor(Color.white.opacity(0.85))
+                    .foregroundStyle(AppColor.white.opacity(0.85))
 
                 headerInfoRows
             }
@@ -93,11 +93,11 @@ struct PetDetailCard: View {
     private func headerInfoRow(icon: String, text: String) -> some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.caption)
-                .foregroundColor(Color.white.opacity(0.75))
+                .font(.app(12))
+                .foregroundStyle(AppColor.white.opacity(0.75))
             Text(text)
                 .appFont(13, weight: .semibold)
-                .foregroundColor(Color.white.opacity(0.75))
+                .foregroundStyle(AppColor.white.opacity(0.75))
         }
     }
 
@@ -127,7 +127,7 @@ struct PetDetailCard: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(AppColor.cardDetailBackground)
         )
-        .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 6)
+        .shadow(color: AppColor.shadowMedium, radius: 10, x: 0, y: 6)
     }
 
     private var gridColumns: [GridItem] {

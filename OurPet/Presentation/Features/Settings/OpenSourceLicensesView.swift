@@ -14,16 +14,16 @@ struct OpenSourceLicensesView: View {
         List(licenses) { item in
             VStack(alignment: .leading, spacing: 6) {
                 Text(item.name)
-                    .font(.headline)
+                    .appFont(17, weight: .semibold)
 
                 Text(item.license)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .appFont(15)
+                    .foregroundStyle(AppColor.subText)
 
                 if let url = item.url {
                     Link(destination: url) {
                         Label("라이선스 전문 보기", systemImage: "arrow.up.right.square")
-                            .font(.footnote)
+                            .appFont(13)
                     }
                 }
             }

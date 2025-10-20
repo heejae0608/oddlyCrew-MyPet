@@ -11,17 +11,17 @@ struct PetOrderSheet: View {
         NavigationStack {
             ZStack {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(AppColor.lightGray.opacity(0.2))
+                    .fill(AppColor.surfaceBackground.opacity(0.2))
 
                 List {
                     ForEach(items) { item in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(item.name)
-                                .font(.headline)
-                                .foregroundColor(.primary)
+                                .appFont(17, weight: .semibold)
+                                .foregroundStyle(AppColor.text)
                             Text(item.species)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .appFont(15)
+                                .foregroundStyle(AppColor.subText)
                         }
                         .padding(.vertical, 6)
                     }

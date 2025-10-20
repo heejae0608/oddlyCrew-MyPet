@@ -30,7 +30,7 @@ struct AppDateField: View {
                 Spacer()
 
                 Image(systemName: "calendar")
-                    .font(.system(size: 16, weight: .medium))
+                    .appFont(16, weight: .medium)
                     .foregroundStyle(AppColor.orange)
             }
             .padding(.horizontal, 16)
