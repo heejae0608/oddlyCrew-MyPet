@@ -61,6 +61,7 @@ struct HistoryView: View {
                 if let selectedPet = viewModel.selectedPet {
                     HistoryDetailView(
                         conversation: conversation,
+                        userName: session.currentUser?.name ?? "사용자",
                         updateData: $updateData,
                         selectedTab: $selectedTab,
                         selectedPet: selectedPet
@@ -82,17 +83,26 @@ struct HistoryView: View {
     }
 
     private var historyList: some View {
-        List {
-            petsSection
+        VStack {
+            List {
+                petsSection
 
-            if viewModel.filteredConversations.isEmpty {
-                emptyStateSection
-            } else {
-                historySections
+                if viewModel.filteredConversations.isEmpty {
+                    emptyStateSection
+                } else {
+                    historySections
+                }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            
+            Spacer()
+            
+            HistoryAdBannerRow()
+                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 12, trailing: 0))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
     }
 
     @ViewBuilder
@@ -101,11 +111,6 @@ struct HistoryView: View {
             Section {
                 petSelectionRow
                     .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 6, trailing: 16))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-
-                HistoryAdBannerRow()
-                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 12, trailing: 0))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
             }

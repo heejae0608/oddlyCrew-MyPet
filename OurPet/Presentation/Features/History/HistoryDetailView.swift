@@ -9,6 +9,7 @@ import SwiftUI
 
 struct HistoryDetailView: View {
     let conversation: ChatConversation
+    let userName: String
     @Binding var updateData: UpdateHistoryToChat
     @Binding var selectedTab: Int
     @Environment(\.dismiss) private var dismiss
@@ -98,24 +99,56 @@ struct HistoryDetailView: View {
                     Spacer(minLength: 8)
                     
                     ForEach(messagePreviews) { message in
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(spacing: 6) {
-                                Text(senderLabel(for: message))
-                                    .appFont(11, weight: .semibold)
-                                    .foregroundStyle(senderAccentColor(for: message))
-                                Text(message.timestamp, style: .time)
-                                    .appFont(11)
-                                    .foregroundStyle(AppColor.subText)
+                        let maxWidth: CGFloat = message.role == .user ? (UIScreen.main.bounds.width * 0.7) : (UIScreen.main.bounds.width * 0.8)
+                        
+                        if message.role == .user {
+                            HStack {
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 6) {
+                                    HStack(spacing: 6) {
+                                        Text(senderLabel(for: message))
+                                            .appFont(11, weight: .semibold)
+                                            .foregroundStyle(senderAccentColor(for: message))
+                                        Text(message.timestamp, style: .time)
+                                            .appFont(11)
+                                            .foregroundStyle(AppColor.subText)
+                                    }
+                                    Text(message.content)
+                                        .appFont(17)
+                                        .foregroundStyle(AppColor.text)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .padding(12)
+                                        .background(bubbleBackground(for: message))
+                                        .cornerRadius(12)
+                                }
+                                .frame(maxWidth: maxWidth, alignment: .trailing)
+                                .padding(.horizontal, 16)
                             }
-                            Text(message.content)
-                                .appFont(17)
-                                .foregroundStyle(AppColor.text)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .padding(12)
-                                .background(bubbleBackground(for: message))
-                                .cornerRadius(12)
+                        } else {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack(spacing: 6) {
+                                        Text(senderLabel(for: message))
+                                            .appFont(11, weight: .semibold)
+                                            .foregroundStyle(senderAccentColor(for: message))
+                                        Text(message.timestamp, style: .time)
+                                            .appFont(11)
+                                            .foregroundStyle(AppColor.subText)
+                                    }
+                                    Text(message.content)
+                                        .appFont(17)
+                                        .foregroundStyle(AppColor.text)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .padding(12)
+                                        .background(bubbleBackground(for: message))
+                                        .cornerRadius(12)
+                                }
+                                .frame(maxWidth: maxWidth, alignment: .leading)
+                                .padding(.horizontal, 16)
+                                
+                                Spacer()
+                            }
                         }
-                        .padding(.horizontal, 16)
                     }
                 }
             }
@@ -127,11 +160,11 @@ private extension HistoryDetailView {
     func senderLabel(for message: ChatMessage) -> String {
         switch message.role {
         case .user:
-            return "사용자"
+            return "\(userName)님"
         case .assistant:
             return selectedPet.name.isEmpty
                 ? "돌봄 파트너"
-                : "\(selectedPet.name) 돌봄 파트너"
+                : "\(selectedPet.name)의 돌봄 파트너"
         case .system:
             return "시스템"
         }
@@ -142,7 +175,7 @@ private extension HistoryDetailView {
         case .user:
             return AppColor.info
         case .assistant:
-            return AppColor.success
+            return .appOrange
         case .system:
             return AppColor.mutedGray
         }
@@ -153,7 +186,7 @@ private extension HistoryDetailView {
         case .user:
             return AppColor.info.opacity(0.12)
         case .assistant:
-            return AppColor.success.opacity(0.12)
+            return AppColor.chatAssistantBubbleBackground.opacity(0.12)
         case .system:
             return AppColor.mutedGray.opacity(0.12)
         }
