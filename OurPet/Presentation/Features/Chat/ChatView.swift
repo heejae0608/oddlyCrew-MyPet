@@ -29,6 +29,9 @@ struct ChatView: View {
                         }
                         .background(AppColor.surfaceBackground)
 
+                        // 광고 배너
+                        bannerView
+
                         // 중간 스크롤 영역 (메시지 리스트)
                         messageList
 
@@ -72,6 +75,18 @@ struct ChatView: View {
                 .environmentObject(session)
         }
         .background(AppColor.surfaceBackground.ignoresSafeArea())
+    }
+
+    private var bannerView: some View {
+        VStack(spacing: 0) {
+            Divider()
+                .background(AppColor.divider)
+
+            AdMobBannerView(adUnitID: AdMobIDs.consultationBannerUnitID)
+                .frame(minHeight: 50, idealHeight: 70, maxHeight: 90)
+                .frame(maxWidth: .infinity)
+                .background(AppColor.surfaceBackground)
+        }
     }
 
     private func petSelectionBar(pets: [Pet]) -> some View {
@@ -130,7 +145,7 @@ struct ChatView: View {
                     }
 
                     // 하단 여백 - 키보드와 입력창에 가려지지 않도록
-                    Spacer(minLength: 120)
+                    Spacer(minLength: 80)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

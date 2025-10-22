@@ -103,6 +103,11 @@ struct HistoryView: View {
                     .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 6, trailing: 16))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
+
+                HistoryAdBannerRow()
+                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 12, trailing: 0))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
             }
             .textCase(nil)
         }

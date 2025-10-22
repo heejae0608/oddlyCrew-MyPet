@@ -12,6 +12,7 @@
 		1BFB10012E7F000100ABCD12 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1BFB10F02E7F000100ABCD12 /* FirebaseCore */; };
 		1BFB10022E7F000100ABCD12 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 1BFB10F12E7F000100ABCD12 /* FirebaseAuth */; };
 		1BFB10032E7F000100ABCD12 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 1BFB10F22E7F000100ABCD12 /* FirebaseFirestore */; };
+		B28CAE342EA70A9D006CB9F0 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = B28CAE322EA70A9D006CB9F0 /* GoogleMobileAds */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,9 +38,22 @@
 		1B95474F2E7AEAED003CE9C4 /* OurPetUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OurPetUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B28CAEEC2EA71C34006CB9F0 /* Exceptions for "OurPet" folder in "OurPet" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 1B9547362E7AEAEB003CE9C4 /* OurPet */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1B9547392E7AEAEB003CE9C4 /* OurPet */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B28CAEEC2EA71C34006CB9F0 /* Exceptions for "OurPet" folder in "OurPet" target */,
+			);
 			path = OurPet;
 			sourceTree = "<group>";
 		};
@@ -60,6 +74,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B28CAE342EA70A9D006CB9F0 /* GoogleMobileAds in Frameworks */,
 				1BFB10022E7F000100ABCD12 /* FirebaseAuth in Frameworks */,
 				1B139A352E96B9FC0022BD9C /* FirebaseStorage in Frameworks */,
 				1B139A372E96B9FC0022BD9C /* FirebaseStorageCombine-Community in Frameworks */,
@@ -130,6 +145,7 @@
 				1BFB10F22E7F000100ABCD12 /* FirebaseFirestore */,
 				1B139A342E96B9FC0022BD9C /* FirebaseStorage */,
 				1B139A362E96B9FC0022BD9C /* FirebaseStorageCombine-Community */,
+				B28CAE322EA70A9D006CB9F0 /* GoogleMobileAds */,
 			);
 			productName = OurPet;
 			productReference = 1B9547372E7AEAEB003CE9C4 /* OurPet.app */;
@@ -216,6 +232,7 @@
 			packageReferences = (
 				1B8B53B72E7E94F900492716 /* XCRemoteSwiftPackageReference "Moya" */,
 				1B8B53B82E7E951E00492716 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				B28CAE312EA70A9D006CB9F0 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1B9547382E7AEAEB003CE9C4 /* Products */;
@@ -417,8 +434,12 @@
 				DEVELOPMENT_TEAM = 6J7U94Y753;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OurPet/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = OurPet;
 				INFOPLIST_KEY_CFBundleName = OurPet;
+				INFOPLIST_KEY_GADApplicationIdentifier = "ca-app-pub-3795485655104320~5990839688";
+				INFOPLIST_KEY_GADDelayAppMeasurementInit = YES;
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "맞춤형 광고 경험을 제공하기 위해 기기의 광고 식별자를 사용합니다.";
 				INFOPLIST_KEY_UIAppFonts = "Pretendard-Regular.otf Pretendard-Medium.otf Pretendard-SemiBold.otf Pretendard-Bold.otf Pretendard-ExtraBold.otf Pretendard-Black.otf";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -461,8 +482,12 @@
 				DEVELOPMENT_TEAM = 6J7U94Y753;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OurPet/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = OurPet;
 				INFOPLIST_KEY_CFBundleName = OurPet;
+				INFOPLIST_KEY_GADApplicationIdentifier = "ca-app-pub-3795485655104320~5990839688";
+				INFOPLIST_KEY_GADDelayAppMeasurementInit = YES;
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "맞춤형 광고 경험을 제공하기 위해 기기의 광고 식별자를 사용합니다.";
 				INFOPLIST_KEY_UIAppFonts = "Pretendard-Regular.otf Pretendard-Medium.otf Pretendard-SemiBold.otf Pretendard-Bold.otf Pretendard-ExtraBold.otf Pretendard-Black.otf";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -637,6 +662,14 @@
 				minimumVersion = 12.3.0;
 			};
 		};
+		B28CAE312EA70A9D006CB9F0 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.12.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -664,6 +697,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 1B8B53B82E7E951E00492716 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		B28CAE322EA70A9D006CB9F0 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B28CAE312EA70A9D006CB9F0 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
