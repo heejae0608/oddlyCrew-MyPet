@@ -10,6 +10,10 @@ import SwiftUI
 struct ContentView: View {
     @Environment(\.diContainer) private var container
     @EnvironmentObject private var session: SessionViewModel
+    @StateObject private var nativeAdLoader = NativeAdLoader.shared
+    @State private var showNativeAdSheet = false
+    @State private var hasRequestedNativeAd = false
+    private let nativeAdFlagKey = "native_ad_popup_has_been_shown"
 
     var body: some View {
         ZStack {
@@ -24,6 +28,36 @@ struct ContentView: View {
         }
         .transition(.opacity)
         .animation(.easeInOut(duration: 0.3), value: session.flow)
+        .onChange(of: session.flow) { newFlow in
+            if newFlow == .splash {
+                hasRequestedNativeAd = false
+                return
+            }
+
+            guard newFlow == .main else { return }
+            guard hasRequestedNativeAd == false else { return }
+
+            hasRequestedNativeAd = true
+            let defaults = UserDefaults.standard
+            if defaults.object(forKey: nativeAdFlagKey) == nil {
+                defaults.set(true, forKey: nativeAdFlagKey)
+                defaults.synchronize()
+            } else {
+                showNativeAdSheet = false
+                nativeAdLoader.clear()
+                nativeAdLoader.load(for: .main)
+            }
+        }
+        .onChange(of: nativeAdLoader.shouldShowAd) { showNativeAd in
+            showNativeAdSheet = showNativeAd
+        }
+        .overlay(alignment: .center) {
+            if showNativeAdSheet, nativeAdLoader.nativeAd != nil {
+                NativeAdPopupView(loader: nativeAdLoader, isPresented: $showNativeAdSheet)
+                    .zIndex(1)
+                    .transition(.opacity)
+            }
+        }
     }
 }
 

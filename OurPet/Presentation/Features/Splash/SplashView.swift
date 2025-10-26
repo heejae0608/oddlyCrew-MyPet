@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SplashView: View {
     @EnvironmentObject private var session: SessionViewModel
+    @State private var didRequestTracking = false
 
     var body: some View {
         ZStack {
@@ -31,6 +32,13 @@ struct SplashView: View {
                 }
             }
             .padding(40)
+        }
+        .onAppear {
+            guard didRequestTracking == false else { return }
+            didRequestTracking = true
+            AdMobManager.shared.prepareForLaunchAds {
+                session.markTrackingPermissionResolved()
+            }
         }
     }
 }

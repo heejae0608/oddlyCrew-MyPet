@@ -25,6 +25,7 @@ final class ChatViewModel: ObservableObject {
     private let session: SessionViewModel
     private let chatUseCase: ChatUseCaseInterface
     private var cancellables = Set<AnyCancellable>()
+    private var questionCountForAd = 0
 
     // 펫별 메시지 캐시 (현재 세션 동안만 유지)
     private struct CachedChatState {
@@ -91,6 +92,8 @@ final class ChatViewModel: ObservableObject {
     func sendMessage() {
         let trimmed = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.isEmpty == false else { return }
+
+        incrementConversationQuestionCount()
 
         let startTime = Date()
         let petInfo = selectedPet.map { "\($0.name) (\($0.species))" } ?? "없음"
@@ -191,6 +194,17 @@ final class ChatViewModel: ObservableObject {
             }
         }
         updateCachedStatus(.inProgress)
+    }
+
+    private func incrementConversationQuestionCount() {
+        questionCountForAd += 1
+        if questionCountForAd % 3 == 0 {
+            let loader = NativeAdLoader.shared
+            if loader.isLoading == false {
+                loader.clear()
+                loader.load(for: .conversation)
+            }
+        }
     }
 
     private func bind() {

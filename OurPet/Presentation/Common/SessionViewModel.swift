@@ -22,6 +22,7 @@ final class SessionViewModel: ObservableObject {
     @Published var loadingMessage: String = "잠시만 기다려주세요..."
     @Published private(set) var flow: SessionFlow = .splash
     @Published private(set) var petDisplayOrder: [UUID] = []
+    @Published private(set) var isTrackingPermissionResolved = false
 
 
     private let authUseCase: AuthUseCaseInterface
@@ -88,14 +89,14 @@ final class SessionViewModel: ObservableObject {
                 try await authUseCase.signInWithApple(idToken: idToken, nonce: nonce, name: name, email: email)
                 await MainActor.run {
                     self.appState = .default
-                    self.flow = .main
                     self.isRestoringSession = false
+                    self.updateFlow(for: self.currentUser)
                 }
                 Log.info("세션 Apple 로그인 성공", tag: "Session")
             } catch {
                 await MainActor.run {
                     self.appState = .error(error.localizedDescription)
-                    self.flow = .login
+                    self.updateFlow(for: nil)
                     self.isRestoringSession = false
                 }
                 Log.error("세션 Apple 로그인 실패: \(error.localizedDescription)", tag: "Session")
@@ -113,7 +114,7 @@ final class SessionViewModel: ObservableObject {
                 try await authUseCase.logout()
                 await MainActor.run {
                     self.appState = .default
-                    self.flow = .login
+                    self.updateFlow(for: nil)
                     self.isRestoringSession = false
                 }
                 Log.info("세션 로그아웃 성공", tag: "Session")
@@ -137,7 +138,7 @@ final class SessionViewModel: ObservableObject {
                     self.pets = []
                     self.petUseCase.clearAllPets()
                     self.appState = .default
-                    self.flow = .login
+                    self.updateFlow(for: nil)
                     self.isRestoringSession = false
                 }
                 Log.info("세션 계정 삭제 성공", tag: "Session")
@@ -179,6 +180,12 @@ final class SessionViewModel: ObservableObject {
         Log.debug("세션 상태 초기화", tag: "Session")
     }
 
+    func markTrackingPermissionResolved() {
+        guard isTrackingPermissionResolved == false else { return }
+        isTrackingPermissionResolved = true
+        updateFlow(for: currentUser)
+    }
+
     private func restoreSession() {
         Task {
             Log.info("세션 복원 시도 - Firebase 토큰 검증", tag: "Session")
@@ -208,7 +215,11 @@ final class SessionViewModel: ObservableObject {
     }
 
     private func updateFlow(for user: User?) {
-        flow = user == nil ? .login : .main
+        if isTrackingPermissionResolved == false {
+            flow = .splash
+        } else {
+            flow = user == nil ? .login : .main
+        }
     }
 
     private func syncPetOrder(with pets: [Pet], persistChanges: Bool) {

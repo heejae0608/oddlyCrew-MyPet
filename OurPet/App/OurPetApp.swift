@@ -12,8 +12,6 @@ import SwiftUI
 struct OurPetApp: App {
     private let container = DIContainer.shared
     @StateObject private var sessionViewModel = DIContainer.shared.makeSessionViewModel()
-    @Environment(\.scenePhase) private var scenePhase
-    @State private var didRequestTrackingAuthorization = false
 
     init() {
         if FirebaseApp.app() == nil {
@@ -29,11 +27,6 @@ struct OurPetApp: App {
             ContentView()
                 .environment(\.diContainer, container)
                 .environmentObject(sessionViewModel)
-        }
-        .onChange(of: scenePhase) { newPhase in
-            guard newPhase == .active, didRequestTrackingAuthorization == false else { return }
-            didRequestTrackingAuthorization = true
-            AdMobManager.shared.configureIfNeeded()
         }
     }
 }
