@@ -65,9 +65,12 @@ final class ChatGPTService: ChatGPTServicing {
 
         let content = latestUserMessage.content
         let existingResponseId = pet.responseId
+        let hasExistingConversation = pet.currentConversationId != nil
 
         Log.info("📝 요청 내용: \(content.prefix(100))...", tag: "ChatGPT")
         Log.info("🐾 반려동물: \(pet.name) (\(pet.species))", tag: "ChatGPT")
+        Log.info("💬 전체 대화 메시지 수: \(messages.count)개", tag: "ChatGPT")
+        Log.info("🔄 기존 대화 세션: \(hasExistingConversation ? "있음" : "없음")", tag: "ChatGPT")
         if let responseId = existingResponseId {
             Log.info("🔗 기존 Response ID: \(responseId)", tag: "ChatGPT")
         }
@@ -79,7 +82,9 @@ final class ChatGPTService: ChatGPTServicing {
                         pet: pet,
                         content: content,
                         existingResponseId: existingResponseId,
-                        previousSummary: previousSummary
+                        previousSummary: previousSummary,
+                        conversationHistory: messages,
+                        hasExistingConversation: hasExistingConversation
                     )
 
                     let duration = Date().timeIntervalSince(startTime)
@@ -101,7 +106,9 @@ final class ChatGPTService: ChatGPTServicing {
         pet: Pet,
         content: String,
         existingResponseId: String?,
-        previousSummary: String? = nil
+        previousSummary: String? = nil,
+        conversationHistory: [ChatMessage] = [],
+        hasExistingConversation: Bool = false
     ) async throws -> ChatResult {
         // Responses API용 입력 준비
         var inputItems: [ResponseInputItem] = []
@@ -125,36 +132,53 @@ final class ChatGPTService: ChatGPTServicing {
         기존 질환: \(pet.existingConditions ?? "없음")
         """
 
-        let systemMessage = systemPrompt.replacingOccurrences(of: "{PET_INFO}", with: petInfo)
-
+        // 저장된 프롬프트 사용 시 펫 정보만 시스템 메시지로 추가
+        // (메인 프롬프트는 OpenAI Platform에 저장되어 있음)
         inputItems.append(ResponseInputItem(
             role: "system",
-            content: systemMessage
+            content: "반려동물 정보:\n\(petInfo)"
         ))
+        
+        Log.info("📤 저장된 프롬프트 사용 + 펫 정보 전송", tag: "ChatGPT")
 
-        // 사용자 메시지: 이전 대화 요약 + 현재 질문
-        var userMessage = content
-        if let summary = previousSummary?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines),
-           !summary.isEmpty {
-            userMessage = "이전 상담 내용:\n\(summary)\n\n현재 질문:\n\(content)"
+        // 전체 대화 기록 포함 (마지막 메시지는 제외하고 아래에서 별도로 추가)
+        let previousMessages = conversationHistory.dropLast()
+        for message in previousMessages {
+            let role: String
+            switch message.role {
+            case .user:
+                role = "user"
+            case .assistant:
+                role = "assistant"
+            case .system:
+                continue // 시스템 메시지는 위에서 조건부로 추가됨
+            }
+            
+            inputItems.append(ResponseInputItem(
+                role: role,
+                content: message.content
+            ))
         }
-
+        
+        Log.info("📤 이전 대화 포함: \(previousMessages.count)개 메시지", tag: "ChatGPT")
+        
+        // 현재 사용자 메시지 추가
         inputItems.append(ResponseInputItem(
             role: "user",
-            content: userMessage
+            content: content
         ))
 
         let requestBody = ResponsesRequest(
             input: inputItems,
-            prompt: nil, // prompt 파일 대신 시스템 메시지 사용
+            prompt: ResponsePrompt(id: APIConfig.OpenAI.storedPromptId), // 저장된 프롬프트 사용
             previousResponseId: existingResponseId,
             store: true,
-            model: "gpt-4o-mini" // 시스템 메시지 사용 시 model 파라미터 필수
+            model: nil // 프롬프트에 model이 지정되어 있으면 nil 가능
         )
 
         // 요청 로깅
-        Log.info("📤 요청 내용 - 시스템 메시지 길이: \(systemMessage.count)자", tag: "ChatGPT")
-        Log.info("📤 요청 내용 - 사용자 메시지: \(userMessage)", tag: "ChatGPT")
+        Log.info("📤 요청 내용 - 전송 메시지 수: \(inputItems.count)개", tag: "ChatGPT")
+        Log.info("📤 요청 내용 - 현재 질문: \(content.prefix(100))...", tag: "ChatGPT")
         Log.info("📤 이전 Response ID: \(existingResponseId ?? "없음")", tag: "ChatGPT")
 
         let payload = try encoder.encode(requestBody)

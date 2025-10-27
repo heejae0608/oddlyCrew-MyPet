@@ -516,25 +516,19 @@ struct ChatMessageView: View {
 
                         // 대화 종료 표시
                         if reply.status == .providingAnswer {
-                            VStack(spacing: 4) {
-                                HStack {
-                                    Spacer()
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundStyle(AppColor.success)
-                                       Text("상담 완료")
-                                            .appFont(11, weight: .medium)
-                                            .foregroundStyle(AppColor.success)
-                                    }
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(AppColor.success)
+                                   Text("상담 완료")
+                                        .appFont(13, weight: .semibold)
+                                        .foregroundStyle(AppColor.success)
                                 }
 
-                                HStack {
-                                    Spacer()
-                                   Text("필요하실 때 다시 상담을 이어가실 수 있어요.")
-                                        .appFont(11)
-                                        .foregroundStyle(AppColor.subText)
-                                        .italic()
-                                }
+                               Text("필요하실 때 다시 상담을 이어가실 수 있어요.")
+                                    .appFont(12)
+                                    .foregroundStyle(AppColor.subText)
+                                    .italic()
                             }
                             .padding(.top, 4)
                         }

@@ -63,6 +63,9 @@ class APIConfig: ObservableObject {
         }()
 
         static let baseURL = "https://api.openai.com/v1/"
+        
+        // 저장된 프롬프트 ID (OpenAI Platform에서 생성)
+        static let storedPromptId = "pmpt_68ff07855b788197ba3682f46f6929140f542f5bc61d5ced"
     }
     
     // MARK: - Claude API 설정 (향후 확장용)
