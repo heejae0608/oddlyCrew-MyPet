@@ -82,14 +82,17 @@ struct ChatView: View {
                 HStack {
                     Image(systemName: "pawprint.fill")
                     Text(viewModel.selectedPet?.name ?? "반려동물 선택")
+                        .appFont(15, weight: .semibold)
                     Image(systemName: "chevron.down")
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(AppColor.white.opacity(0.95))
-                .cornerRadius(20)
+                .background(
+                    Capsule()
+                        .fill(AppColor.orange)
+                )
             }
-            .foregroundColor(AppColor.ink)
+            .foregroundColor(AppColor.white)
             .padding(.vertical)
 
             Spacer()
@@ -201,7 +204,7 @@ struct ChatView: View {
                             .buttonStyle(.borderedProminent)
                             .tint(AppColor.orange)
                         }
-
+                        
                         Button(role: .destructive) {
                             viewModel.startNewConversation()
                         } label: {
@@ -218,46 +221,58 @@ struct ChatView: View {
                 .background(AppColor.surfaceBackground)
             }
 
-            Divider()
-                .background(AppColor.divider)
-
-            HStack(alignment: .bottom, spacing: 12) {
+            HStack {
                 // 텍스트 입력 필드
-                TextField(
-                    "무엇을 도와드릴까요? 편하게 말씀해 주세요",
-                    text: $viewModel.messageText,
-                    axis: .vertical
-                )
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .focused($isMessageFieldFocused)
-                .submitLabel(.send)
-                .onSubmit {
-                    if !viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isLoading {
-                        viewModel.sendMessage()
+                Spacer()
+                    .frame(width: 10)
+                HStack(alignment: .center, spacing: 12) {
+                    TextField(
+                        "무엇을 도와드릴까요? 편하게 말씀해 주세요",
+                        text: $viewModel.messageText,
+                        axis: .vertical
+                    )
+                    .textFieldStyle(.plain)
+                    .focused($isMessageFieldFocused)
+                    .submitLabel(.send)
+                    .onSubmit {
+                        if !viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isLoading {
+                            viewModel.sendMessage()
+                        }
+                        isMessageFieldFocused = false
                     }
-                    isMessageFieldFocused = false
-                }
-                .appFont(16)
-                .disabled(viewModel.isLoading)
+                    .appFont(16)
+                    .disabled(viewModel.isLoading)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
 
-                // 전송 버튼
-                Button {
-                    viewModel.sendMessage()
-                    isMessageFieldFocused = false
-                } label: {
-                    Image(systemName: viewModel.isLoading ? "stop.circle.fill" : "paperplane.fill")
-                        .font(.system(size: 22, weight: .regular, design: .rounded))
-                        .foregroundColor(
-                            viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading
-                            ? AppColor.ink : AppColor.orange
-                        )
+                    // 전송 버튼
+                    Button {
+                        viewModel.sendMessage()
+                        isMessageFieldFocused = false
+                    } label: {
+                        Image(systemName: viewModel.isLoading ? "stop.circle.fill" : "paperplane.fill")
+                            .font(.system(size: 22, weight: .regular, design: .rounded))
+                            .foregroundColor(
+                                viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading
+                                ? AppColor.ink : AppColor.orange
+                            )
+                    }
+                    .disabled(viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading)
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.trailing, 6)
                 }
-                .disabled(viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading)
-                .buttonStyle(PlainButtonStyle())
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(AppColor.chatUserBubbleBackground)
+                )
+                .shadow(color: AppColor.shadowSoft, radius: 10, x: 0, y: 6)
+                
+                Spacer()
+                    .frame(width: 10)
+                
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(AppColor.surfaceBackground)
+            .padding(.vertical, 10)
+            
         }
         .disabled(session.pets.isEmpty)
     }
@@ -409,8 +424,8 @@ struct ChatMessageView: View {
                                 .resizable()
                                 .frame(width: 40, height: 40)
                                 .scaledToFit()
-                                .foregroundColor(AppColor.orange.opacity(0.35))
-                                .background(AppColor.white.opacity(0.6))
+                                .foregroundColor(AppColor.orange)
+                                .background(AppColor.orange.opacity(0.18))
                                 .clipShape(Circle())
                         }
                         
