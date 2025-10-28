@@ -42,7 +42,7 @@ struct HistoryView: View {
 
         return grouped
             .map { date, conversations in
-                (formatter.string(from: date), conversations.sorted { $0.startDate < $1.startDate })
+                (formatter.string(from: date), conversations.sorted { $0.startDate > $1.startDate })
             }
             .sorted { $0.0 > $1.0 }
     }
@@ -494,6 +494,8 @@ private final class PreviewChatUseCase: ChatUseCaseInterface {
     func clearHistory(for petId: UUID?) {}
 
     func startNewConversation(for petId: UUID) {}
+    
+    func saveCurrentMessages(conversationId: UUID, messages: [ChatMessage]) async throws {}
 
     func send(messages: [ChatMessage], pet: Pet?) -> AnyPublisher<AssistantReply, Error> {
         Empty().eraseToAnyPublisher()

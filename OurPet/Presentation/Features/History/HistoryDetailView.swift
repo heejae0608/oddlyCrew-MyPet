@@ -17,11 +17,15 @@ struct HistoryDetailView: View {
     var selectedPet: Pet
     
     private var messagePreviews: [ChatMessage] {
+        // 우선순위: messages > responses > fullSummary
         if conversation.messages.isEmpty == false {
+            Log.debug("📋 히스토리 상세: conversation.messages 사용 (\(conversation.messages.count)개)", tag: "HistoryDetail")
             return conversation.messages.sorted { $0.timestamp < $1.timestamp }
         }
         
         if conversation.responses.isEmpty == false {
+            Log.warning("⚠️ 히스토리 상세: messages 없음 - responses.summary 대체 사용 (\(conversation.responses.count)개)", tag: "HistoryDetail")
+            Log.warning("   → 실제 전체 응답이 아닌 요약본이 표시됩니다!", tag: "HistoryDetail")
             return conversation.responses
                 .sorted { $0.date < $1.date }
                 .map { response in
@@ -35,7 +39,12 @@ struct HistoryDetailView: View {
                 }
         }
         
-        guard conversation.fullSummary.isEmpty == false else { return [] }
+        guard conversation.fullSummary.isEmpty == false else {
+            Log.warning("⚠️ 히스토리 상세: 표시할 데이터 없음", tag: "HistoryDetail")
+            return []
+        }
+        
+        Log.warning("⚠️ 히스토리 상세: fullSummary 대체 사용", tag: "HistoryDetail")
         return [
             ChatMessage(
                 id: UUID(),
@@ -150,6 +159,9 @@ struct HistoryDetailView: View {
                             }
                         }
                     }
+                    
+                    // 하단 여백
+                    Spacer(minLength: 20)
                 }
             }
         }
@@ -160,7 +172,11 @@ private extension HistoryDetailView {
     func senderLabel(for message: ChatMessage) -> String {
         switch message.role {
         case .user:
-            return "\(userName)님"
+            if userName.isEmpty || userName == "사용자" {
+                return "사용자"
+            } else {
+                return "\(userName)님"
+            }
         case .assistant:
             return selectedPet.name.isEmpty
                 ? "돌봄 파트너"
