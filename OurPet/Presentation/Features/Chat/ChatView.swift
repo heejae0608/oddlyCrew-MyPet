@@ -240,10 +240,20 @@ struct ChatView: View {
                         }
                         .disabled(viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .buttonStyle(PlainButtonStyle())
+                        .padding(.trailing, 6)
                     }
+                    
                 }
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(AppColor.chatUserBubbleBackground)
+                )
+                .shadow(color: AppColor.shadowSoft, radius: 10, x: 0, y: 6)
+                Spacer()
+                    .frame(width: 10)
             }
             .padding(.vertical, 10)
+            
             
         }
         .disabled(session.pets.isEmpty)
