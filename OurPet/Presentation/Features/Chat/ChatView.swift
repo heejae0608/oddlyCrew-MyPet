@@ -193,7 +193,6 @@ struct ChatView: View {
                     Text(viewModel.continueButtonTitle)
                         .appFont(15, weight: .semibold)
                         .frame(maxWidth: .infinity)
-
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(AppColor.orange)
@@ -225,22 +224,23 @@ struct ChatView: View {
                     .disabled(viewModel.isLoading)
                     .padding(.vertical, 10)
                     .padding(.horizontal, 12)
-
-                // 전송 버튼 (로딩 중에는 숨김)
-                if !viewModel.isLoading {
-                    Button {
-                        viewModel.sendMessage()
-                        isMessageFieldFocused = false
-                    } label: {
-                        Image(systemName: "paperplane.fill")
-                            .font(.system(size: 22, weight: .regular, design: .rounded))
-                            .foregroundColor(
-                                viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                ? AppColor.ink : AppColor.orange
-                            )
+                    
+                    // 전송 버튼 (로딩 중에는 숨김)
+                    if !viewModel.isLoading {
+                        Button {
+                            viewModel.sendMessage()
+                            isMessageFieldFocused = false
+                        } label: {
+                            Image(systemName: "paperplane.fill")
+                                .font(.system(size: 22, weight: .regular, design: .rounded))
+                                .foregroundColor(
+                                    viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                    ? AppColor.ink : AppColor.orange
+                                )
+                        }
+                        .disabled(viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .disabled(viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .buttonStyle(PlainButtonStyle())
                 }
             }
             .padding(.vertical, 10)
