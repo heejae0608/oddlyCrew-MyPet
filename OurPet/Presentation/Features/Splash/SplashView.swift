@@ -34,16 +34,24 @@ struct SplashView: View {
             .padding(40)
         }
         .onAppear {
-            // 스플래시 화면 진입 이벤트
-            AnalyticsHelper.logScreenView("SplashView")
-            AnalyticsHelper.logEvent("app_start", parameters: [
-                "environment": AppEnvironment.current.rawValue,
-                "bundle_id": Bundle.main.bundleIdentifier ?? "unknown"
-            ])
+            // 스플래시 화면 진입 이벤트 (한 번만)
+            if !didRequestTracking {
+                AnalyticsHelper.logScreenView("SplashView")
+                AnalyticsHelper.logEvent("app_start", parameters: [
+                    "environment": AppEnvironment.current.rawValue,
+                    "bundle_id": Bundle.main.bundleIdentifier ?? "unknown"
+                ])
+            }
             
-            guard didRequestTracking == false else { return }
+            guard didRequestTracking == false else { 
+                print("🔍 ATT 권한 요청 이미 완료됨")
+                return 
+            }
             didRequestTracking = true
+            print("🔍 SplashView에서 ATT 권한 요청 시작")
+            print("🔍 AdMobManager.shared 인스턴스: \(AdMobManager.shared)")
             AdMobManager.shared.prepareForLaunchAds {
+                print("🔍 SplashView에서 ATT 권한 요청 완료 콜백")
                 session.markTrackingPermissionResolved()
             }
         }

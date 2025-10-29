@@ -8,8 +8,8 @@
 import AppTrackingTransparency
 import AdSupport
 import Foundation
-import GoogleMobileAds
 import UIKit
+import GoogleMobileAds
 
 enum NativeAdPlacement {
     case main
@@ -117,6 +117,7 @@ final class AdMobManager: NSObject {
     private var hasResolvedTrackingPermission = false
     private var isRequestingTrackingPermission = false
     private var trackingCompletionHandlers: [() -> Void] = []
+    private var trackingAuthorizationObserver: NSObjectProtocol?
 
     private var launchInterstitialAd: InterstitialAd?
     private var isLoadingLaunchInterstitial = false
@@ -132,13 +133,18 @@ final class AdMobManager: NSObject {
     func prepareForLaunchAds(completion: @escaping () -> Void) {
         DispatchQueue.main.async {
             if self.hasResolvedTrackingPermission {
+                print("🔍 ATT 권한 이미 해결됨 - 즉시 완료")
                 completion()
                 return
             }
 
             self.trackingCompletionHandlers.append(completion)
-            guard self.isRequestingTrackingPermission == false else { return }
+            guard self.isRequestingTrackingPermission == false else { 
+                print("🔍 ATT 권한 요청 중 - 대기열에 추가")
+                return 
+            }
             self.isRequestingTrackingPermission = true
+            print("🔍 ATT 권한 요청 시작")
 
             self.requestTrackingAuthorization { [weak self] in
                 guard let self else { return }
@@ -148,6 +154,7 @@ final class AdMobManager: NSObject {
 
                 let handlers = self.trackingCompletionHandlers
                 self.trackingCompletionHandlers.removeAll()
+                print("🔍 ATT 권한 요청 완료 - \(handlers.count)개 콜백 실행")
                 handlers.forEach { $0() }
             }
         }
@@ -169,18 +176,66 @@ final class AdMobManager: NSObject {
     }
 
     private func requestTrackingAuthorization(completion: @escaping () -> Void) {
+        print("🔍 requestTrackingAuthorization 메서드 호출됨")
+        
         if #available(iOS 14, *) {
+            guard UIApplication.shared.applicationState == .active else {
+                print("🔍 앱 상태가 active 아님(\(UIApplication.shared.applicationState.rawValue)) - didBecomeActive까지 대기")
+                if trackingAuthorizationObserver == nil {
+                    trackingAuthorizationObserver = NotificationCenter.default.addObserver(
+                        forName: UIApplication.didBecomeActiveNotification,
+                        object: nil,
+                        queue: .main
+                    ) { [weak self] _ in
+                        guard let self else { return }
+                        if let observer = self.trackingAuthorizationObserver {
+                            NotificationCenter.default.removeObserver(observer)
+                            self.trackingAuthorizationObserver = nil
+                        }
+                        print("🔍 앱 활성화됨 - ATT 권한 요청 재시도")
+                        self.requestTrackingAuthorization(completion: completion)
+                    }
+                }
+                return
+            }
+
+            if let observer = trackingAuthorizationObserver {
+                NotificationCenter.default.removeObserver(observer)
+                trackingAuthorizationObserver = nil
+            }
+
             let status = ATTrackingManager.trackingAuthorizationStatus
-            if status == .notDetermined {
-                ATTrackingManager.requestTrackingAuthorization { [weak self] _ in
+            print("🔍 현재 ATT 상태: \(status.rawValue)")
+            print("🔍 iOS 버전: \(UIDevice.current.systemVersion)")
+            
+            // 상태별 처리
+            switch status {
+            case .notDetermined:
+                print("🔍 ATT 권한 미결정 - 팝업 요청 시작")
+                ATTrackingManager.requestTrackingAuthorization { [weak self] newStatus in
+                    print("🔍 ATT 팝업 결과: \(newStatus.rawValue)")
                     self?.logAdvertisingIdentifier()
                     DispatchQueue.main.async { completion() }
                 }
-            } else {
+            case .denied:
+                print("🔍 ATT 권한 거부됨")
+                logAdvertisingIdentifier()
+                DispatchQueue.main.async { completion() }
+            case .authorized:
+                print("🔍 ATT 권한 허용됨")
+                logAdvertisingIdentifier()
+                DispatchQueue.main.async { completion() }
+            case .restricted:
+                print("🔍 ATT 권한 제한됨")
+                logAdvertisingIdentifier()
+                DispatchQueue.main.async { completion() }
+            @unknown default:
+                print("🔍 ATT 권한 알 수 없는 상태")
                 logAdvertisingIdentifier()
                 DispatchQueue.main.async { completion() }
             }
         } else {
+            print("🔍 iOS 14 미만 - ATT 권한 불필요")
             logAdvertisingIdentifier()
             DispatchQueue.main.async { completion() }
         }

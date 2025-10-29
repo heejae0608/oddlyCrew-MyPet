@@ -14,14 +14,14 @@ enum FirebaseConfiguration {
         if FirebaseApp.app() != nil { return }
 
         let environment = AppEnvironment.current
-        let plistFileName = "GoogleService-Info-\(environment.rawValue)"
         let bundle = Bundle.main
 
-        // 1) 번들에서 plist 우선 시도
+        // 1) 환경별 plist 시도
+        let plistFileName = "GoogleService-Info-\(environment.rawValue)"
         if let url = bundle.url(forResource: plistFileName, withExtension: "plist") ??
             bundle.url(forResource: plistFileName, withExtension: "plist", subdirectory: "Resources/Secrets/\(environment.rawValue)"),
            let options = FirebaseOptions(contentsOfFile: url.path) {
-            Log.info("Firebase 설정 사용(plist): env=\(environment.rawValue), file=\(url.lastPathComponent)", tag: "Firebase")
+            Log.info("Firebase 설정 사용(환경별 plist): env=\(environment.rawValue), file=\(url.lastPathComponent)", tag: "Firebase")
             FirebaseApp.configure(options: options)
             return
         }
