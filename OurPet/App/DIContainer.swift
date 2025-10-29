@@ -20,6 +20,8 @@ final class DIContainer {
     private let remotePetDataSource: RemotePetDataSourceInterface
     private let remoteConversationDataSource: RemoteConversationDataSourceInterface
     private let remoteChatConversationDataSource: RemoteChatConversationDataSourceInterface
+    private let remoteAppConfigDataSource: RemoteAppConfigDataSourceInterface
+    private let appConfigRepository: AppConfigRepositoryInterface
 
     init(
         userRepository: UserRepositoryInterface? = nil,
@@ -31,7 +33,9 @@ final class DIContainer {
         remoteUserDataSource: RemoteUserDataSource = FirestoreUserDataSource(),
         remotePetDataSource: RemotePetDataSourceInterface = RemotePetDataSource(),
         remoteConversationDataSource: RemoteConversationDataSourceInterface = RemoteConversationDataSource(),
-        remoteChatConversationDataSource: RemoteChatConversationDataSourceInterface = RemoteChatConversationDataSource()
+        remoteChatConversationDataSource: RemoteChatConversationDataSourceInterface = RemoteChatConversationDataSource(),
+        remoteAppConfigDataSource: RemoteAppConfigDataSourceInterface = RemoteAppConfigDataSource(),
+        appConfigRepository: AppConfigRepositoryInterface? = nil
     ) {
         self.userRepository = userRepository ?? UserRepository()
         self.remotePetDataSource = remotePetDataSource
@@ -43,6 +47,8 @@ final class DIContainer {
         self.chatService = chatService
         self.firebaseAuthService = firebaseAuthService
         self.remoteUserDataSource = remoteUserDataSource
+        self.remoteAppConfigDataSource = remoteAppConfigDataSource
+        self.appConfigRepository = appConfigRepository ?? AppConfigRepository(remoteDataSource: remoteAppConfigDataSource)
     }
 
     // MARK: - UseCases
@@ -73,6 +79,10 @@ final class DIContainer {
             chatConversationRepository: chatConversationRepository,
             chatService: chatService
         )
+    }
+
+    func makeAppConfigUseCase() -> AppConfigUseCaseInterface {
+        AppConfigUseCase(repository: appConfigRepository)
     }
 
     // MARK: - ViewModels

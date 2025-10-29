@@ -273,21 +273,36 @@ final class ChatViewModel: ObservableObject {
 
         Log.info("🆕 사용자 요청으로 새로운 대화 시작", tag: "Chat")
 
-        // UI 초기화
-        messages.removeAll()
-        messagesByPet[petId] = CachedChatState(messages: [], status: .inProgress)
-        latestAssistantReply = nil
-        messageText = ""
-        isConversationCompleted = false
-        canShowContinueButton = false
-        updateButtonTitles(for: selectedPet)
+        Task {
+            // 현재 메시지를 히스토리에 저장 (완료될 때까지 기다림)
+            if let conversationId = selectedPet?.currentConversationId, !messages.isEmpty {
+                do {
+                    try await chatUseCase.saveCurrentMessages(
+                        conversationId: conversationId,
+                        messages: messages
+                    )
+                    Log.info("💾 이전 대화를 히스토리에 저장 완료", tag: "Chat")
+                } catch {
+                    Log.error("히스토리 저장 실패: \(error.localizedDescription)", tag: "Chat")
+                }
+            }
 
-        // 백엔드에서 새 세션 준비
-        chatUseCase.startNewConversation(for: petId)
+            // 저장 완료 후 UI 초기화 (메인 스레드에서 실행)
+            await MainActor.run {
+                messages.removeAll()
+                messagesByPet[petId] = CachedChatState(messages: [], status: .inProgress)
+                latestAssistantReply = nil
+                messageText = ""
+                isConversationCompleted = false
+                canShowContinueButton = false
+                updateButtonTitles(for: selectedPet)
+                
+                Log.debug("새 대화 준비 완료 - UI 초기화됨", tag: "Chat")
+            }
 
-        Log.debug("새 대화 준비 완료 - UI 초기화됨", tag: "Chat")
-
-        insertWelcomeMessageIfNeeded()
+            // 백엔드에서 새 세션 준비
+            chatUseCase.startNewConversation(for: petId)
+        }
     }
 
 }

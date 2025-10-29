@@ -52,6 +52,12 @@ struct LoginView: View {
                             currentNonce = nonce
                             request.nonce = NonceUtil.sha256(nonce)
                             Log.debug("Apple SignIn 요청 준비", tag: "LoginView")
+                            
+                            // Apple 로그인 버튼 클릭 이벤트
+                            AnalyticsHelper.logButtonClick("apple_signin", screenName: "LoginView")
+                            AnalyticsHelper.logEvent("apple_login_attempt", parameters: [
+                                "environment": AppEnvironment.current.rawValue
+                            ])
                         },
                         onCompletion: { result in
                             handleSignInWithApple(result: result)
@@ -79,6 +85,13 @@ struct LoginView: View {
                     .background(Color(.systemBackground))
                     .cornerRadius(12)
             }
+        }
+        .onAppear {
+            // 로그인 화면 진입 이벤트
+            AnalyticsHelper.logScreenView("LoginView")
+            AnalyticsHelper.logEvent("login_screen_viewed", parameters: [
+                "environment": AppEnvironment.current.rawValue
+            ])
         }
         .alert("로그인 오류", isPresented: $showingAlert) {
             Button("확인", role: .cancel) {
@@ -125,12 +138,25 @@ struct LoginView: View {
                 )
                 currentNonce = nil
                 Log.info("Apple 로그인 처리 시작", tag: "LoginView")
+                
+                // Apple 로그인 성공 이벤트
+                AnalyticsHelper.logEvent("apple_login_success", parameters: [
+                    "environment": AppEnvironment.current.rawValue,
+                    "has_name": name != nil ? "true" : "false",
+                    "has_email": email != nil ? "true" : "false"
+                ])
             }
         case .failure(let error):
             currentNonce = nil
             alertMessage = "로그인에 실패했습니다: \(error.localizedDescription)"
             showingAlert = true
             Log.error("Apple 로그인 오류: \(error.localizedDescription)", tag: "LoginView")
+            
+            // Apple 로그인 실패 이벤트
+            AnalyticsHelper.logEvent("apple_login_failure", parameters: [
+                "environment": AppEnvironment.current.rawValue,
+                "error_message": error.localizedDescription
+            ])
         }
     }
 }

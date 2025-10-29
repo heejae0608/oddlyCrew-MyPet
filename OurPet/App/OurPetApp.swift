@@ -10,16 +10,19 @@ import SwiftUI
 
 @main
 struct OurPetApp: App {
-    private let container = DIContainer.shared
-    @StateObject private var sessionViewModel = DIContainer.shared.makeSessionViewModel()
+    private let container: DIContainer
+    @StateObject private var sessionViewModel: SessionViewModel
 
     init() {
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-            Log.info("FirebaseApp configure() 수행", tag: "App")
-        } else {
-            Log.debug("FirebaseApp 이미 초기화됨", tag: "App")
-        }
+        // Firebase 초기화
+        FirebaseConfiguration.configureIfNeeded()
+        
+        // 환경 정보 출력
+        AppEnvironment.current.printEnvironmentInfo()
+
+        // Firebase 초기화 이후 DI 구성 요소 생성 (의존성에서 Firestore 접근 가능하도록)
+        self.container = DIContainer.shared
+        self._sessionViewModel = StateObject(wrappedValue: DIContainer.shared.makeSessionViewModel())
     }
 
     var body: some Scene {

@@ -10,7 +10,7 @@ import FirebaseCore
 import FirebaseFirestore
 
 final class RemoteChatConversationDataSource: RemoteChatConversationDataSourceInterface {
-    private let collectionName = "chatConversations"
+    private let collectionName: String
     private let database: Firestore
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
@@ -20,9 +20,7 @@ final class RemoteChatConversationDataSource: RemoteChatConversationDataSourceIn
         encoder: JSONEncoder = JSONEncoder(),
         decoder: JSONDecoder = JSONDecoder()
     ) {
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
+        self.collectionName = AppEnvironment.current.collectionName(for: "chatConversations")
         self.database = database ?? Firestore.firestore()
         self.encoder = encoder
         self.decoder = decoder
@@ -40,6 +38,9 @@ final class RemoteChatConversationDataSource: RemoteChatConversationDataSourceIn
         }.sorted { $0.lastUpdated > $1.lastUpdated }
 
         Log.debug("대화 세션 목록 조회 완료 (개수: \(conversations.count))", tag: "RemoteChatConversationDataSource")
+        for (index, conv) in conversations.enumerated() {
+            Log.debug("  [\(index)] messages: \(conv.messages.count)개, responses: \(conv.responses.count)개, status: \(conv.status.rawValue)", tag: "RemoteChatConversationDataSource")
+        }
         return conversations
     }
 
@@ -51,12 +52,24 @@ final class RemoteChatConversationDataSource: RemoteChatConversationDataSourceIn
 
         let conversation = try snapshot.data(as: ChatConversation?.self)
 
-        Log.debug("대화 세션 조회 완료", tag: "RemoteChatConversationDataSource")
+        if let conv = conversation {
+            Log.debug("대화 세션 조회 완료", tag: "RemoteChatConversationDataSource")
+            Log.debug("  - messages: \(conv.messages.count)개", tag: "RemoteChatConversationDataSource")
+            Log.debug("  - responses: \(conv.responses.count)개", tag: "RemoteChatConversationDataSource")
+            Log.debug("  - status: \(conv.status.rawValue)", tag: "RemoteChatConversationDataSource")
+        } else {
+            Log.debug("대화 세션 조회 완료 - 결과 없음", tag: "RemoteChatConversationDataSource")
+        }
+        
         return conversation
     }
 
     func upsertConversation(_ conversation: ChatConversation) async throws {
-        Log.debug("대화 세션 저장 시작 (id: \(conversation.id.uuidString), responses: \(conversation.responses.count)개)", tag: "RemoteChatConversationDataSource")
+        Log.debug("대화 세션 저장 시작", tag: "RemoteChatConversationDataSource")
+        Log.debug("  - id: \(conversation.id.uuidString)", tag: "RemoteChatConversationDataSource")
+        Log.debug("  - responses: \(conversation.responses.count)개", tag: "RemoteChatConversationDataSource")
+        Log.debug("  - messages: \(conversation.messages.count)개", tag: "RemoteChatConversationDataSource")
+        Log.debug("  - status: \(conversation.status.rawValue)", tag: "RemoteChatConversationDataSource")
 
         let document = database.collection(collectionName).document(conversation.id.uuidString)
         try document.setData(from: conversation)
@@ -64,7 +77,14 @@ final class RemoteChatConversationDataSource: RemoteChatConversationDataSourceIn
         // 저장 후 검증
         let savedDoc = try await document.getDocument()
         if savedDoc.exists {
-            Log.debug("✅ 대화 세션 Firestore 저장 완료 및 검증 성공", tag: "RemoteChatConversationDataSource")
+            // 저장된 데이터 재확인
+            if let verified = try? savedDoc.data(as: ChatConversation.self) {
+                Log.debug("✅ 대화 세션 Firestore 저장 완료 및 검증 성공", tag: "RemoteChatConversationDataSource")
+                Log.debug("  - 저장된 messages: \(verified.messages.count)개", tag: "RemoteChatConversationDataSource")
+                Log.debug("  - 저장된 responses: \(verified.responses.count)개", tag: "RemoteChatConversationDataSource")
+            } else {
+                Log.error("❌ 대화 세션 Firestore 저장 후 디코딩 실패", tag: "RemoteChatConversationDataSource")
+            }
         } else {
             Log.error("❌ 대화 세션 Firestore 저장 실패 - 문서가 존재하지 않음", tag: "RemoteChatConversationDataSource")
         }

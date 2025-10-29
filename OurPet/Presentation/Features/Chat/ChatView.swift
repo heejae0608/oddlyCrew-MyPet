@@ -47,17 +47,7 @@ struct ChatView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationViewStyle(StackNavigationViewStyle())
         .toolbar {
-            if session.pets.isNotEmpty && viewModel.selectedPet != nil {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        viewModel.startNewConversation()
-                    } label: {
-                        Image(systemName: "plus.bubble")
-                            .foregroundStyle(AppColor.info)
-                    }
-                    .accessibilityLabel("새 대화 시작")
-                }
-            }
+            // 새 대화 시작 버튼은 펫 선택 바로 이동
         }
         .sheet(isPresented: $showingPetSelection) {
             PetSelectionView(
@@ -96,13 +86,18 @@ struct ChatView: View {
             .padding(.vertical)
 
             Spacer()
-
-            Button(role: .destructive) {
-                viewModel.clearChat()
-            } label: {
-                Image(systemName: "trash")
+            
+            // 새 대화 시작 버튼 (채팅이 있을 때만 표시)
+            if viewModel.messages.isNotEmpty {
+                Button {
+                    viewModel.startNewConversation()
+                } label: {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 20))
+                        .foregroundStyle(AppColor.orange)
+                }
+                .accessibilityLabel("새 대화 시작")
             }
-            .disabled(viewModel.messages.isEmpty)
         }
         .padding(.horizontal)
     }
@@ -190,32 +185,18 @@ struct ChatView: View {
 
     private var messageComposer: some View {
         VStack(spacing: 0) {
-            if viewModel.isConversationCompleted {
-                VStack(spacing: 12) {
-                    HStack(spacing: 12) {
-                        if viewModel.canShowContinueButton {
-                            Button {
-                                viewModel.continueConversation()
-                            } label: {
-                                Text(viewModel.continueButtonTitle)
-                                    .appFont(15, weight: .semibold)
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(AppColor.orange)
-                        }
-                        
-                        Button(role: .destructive) {
-                            viewModel.startNewConversation()
-                        } label: {
-                            Text(viewModel.newConversationButtonTitle)
-                                .appFont(15, weight: .semibold)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(AppColor.orange)
-                    }
+
+            if viewModel.isConversationCompleted && viewModel.canShowContinueButton {
+                Button {
+                    viewModel.continueConversation()
+                } label: {
+                    Text(viewModel.continueButtonTitle)
+                        .appFont(15, weight: .semibold)
+                        .frame(maxWidth: .infinity)
+
                 }
+                .buttonStyle(.borderedProminent)
+                .tint(AppColor.orange)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
                 .background(AppColor.surfaceBackground)
@@ -245,31 +226,22 @@ struct ChatView: View {
                     .padding(.vertical, 10)
                     .padding(.horizontal, 12)
 
-                    // 전송 버튼
+                // 전송 버튼 (로딩 중에는 숨김)
+                if !viewModel.isLoading {
                     Button {
                         viewModel.sendMessage()
                         isMessageFieldFocused = false
                     } label: {
-                        Image(systemName: viewModel.isLoading ? "stop.circle.fill" : "paperplane.fill")
+                        Image(systemName: "paperplane.fill")
                             .font(.system(size: 22, weight: .regular, design: .rounded))
                             .foregroundColor(
-                                viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading
+                                viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                 ? AppColor.ink : AppColor.orange
                             )
                     }
-                    .disabled(viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading)
+                    .disabled(viewModel.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .buttonStyle(PlainButtonStyle())
-                    .padding(.trailing, 6)
                 }
-                .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(AppColor.chatUserBubbleBackground)
-                )
-                .shadow(color: AppColor.shadowSoft, radius: 10, x: 0, y: 6)
-                
-                Spacer()
-                    .frame(width: 10)
-                
             }
             .padding(.vertical, 10)
             

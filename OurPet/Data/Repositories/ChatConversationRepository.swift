@@ -24,10 +24,22 @@ final class ChatConversationRepository: ChatConversationRepositoryInterface {
     func getConversations(for petId: UUID) async throws -> [ChatConversation] {
         Log.debug("대화 세션 목록 조회 시작 (petId: \(petId.uuidString))", tag: "ChatConversationRepository")
 
-        let conversations = try await remoteDataSource.fetchConversations(for: petId)
+        let fetchedConversations = try await remoteDataSource.fetchConversations(for: petId)
+        
+        // 로컬 캐시 업데이트 (Publisher 발행)
+        await MainActor.run {
+            for conversation in fetchedConversations {
+                if let index = conversations.firstIndex(where: { $0.id == conversation.id }) {
+                    conversations[index] = conversation
+                } else {
+                    conversations.append(conversation)
+                }
+            }
+            conversations.sort { $0.lastUpdated > $1.lastUpdated }
+        }
 
-        Log.debug("대화 세션 목록 조회 완료 (개수: \(conversations.count))", tag: "ChatConversationRepository")
-        return conversations
+        Log.debug("대화 세션 목록 조회 완료 (개수: \(fetchedConversations.count))", tag: "ChatConversationRepository")
+        return fetchedConversations
     }
 
     func getConversation(by id: UUID) async throws -> ChatConversation? {
