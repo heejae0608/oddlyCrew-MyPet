@@ -17,7 +17,7 @@ protocol RemotePetDataSourceInterface {
 }
 
 final class RemotePetDataSource: RemotePetDataSourceInterface {
-    private let collectionName = "pets"
+    private let collectionName: String
     private let database: Firestore
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
@@ -27,9 +27,7 @@ final class RemotePetDataSource: RemotePetDataSourceInterface {
         encoder: JSONEncoder = JSONEncoder(),
         decoder: JSONDecoder = JSONDecoder()
     ) {
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
+        self.collectionName = AppEnvironment.current.collectionName(for: "pets")
         self.database = database ?? Firestore.firestore()
         self.encoder = encoder
         self.decoder = decoder

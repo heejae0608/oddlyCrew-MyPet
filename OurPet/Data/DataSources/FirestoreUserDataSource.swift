@@ -10,7 +10,7 @@ import FirebaseFirestore
 import Foundation
 
 final class FirestoreUserDataSource: RemoteUserDataSource {
-    private let collectionName = "users"
+    private let collectionName: String
     private let database: Firestore
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
@@ -20,9 +20,7 @@ final class FirestoreUserDataSource: RemoteUserDataSource {
         encoder: JSONEncoder = JSONEncoder(),
         decoder: JSONDecoder = JSONDecoder()
     ) {
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
+        self.collectionName = AppEnvironment.current.collectionName(for: "users")
         self.database = database ?? Firestore.firestore()
         self.encoder = encoder
         self.decoder = decoder

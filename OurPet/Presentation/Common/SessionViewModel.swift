@@ -91,6 +91,14 @@ final class SessionViewModel: ObservableObject {
                     self.appState = .default
                     self.isRestoringSession = false
                     self.updateFlow(for: self.currentUser)
+                    
+                    // 로그인 완료 Analytics 이벤트
+                    AnalyticsHelper.logEvent("user_login_complete", parameters: [
+                        "environment": AppEnvironment.current.rawValue,
+                        "login_method": "apple",
+                        "user_id": self.currentUser?.id ?? "unknown"
+                    ])
+                    AnalyticsHelper.setUserId(self.currentUser?.id.uuidString)
                 }
                 Log.info("세션 Apple 로그인 성공", tag: "Session")
             } catch {

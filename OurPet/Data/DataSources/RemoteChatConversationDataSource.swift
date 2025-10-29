@@ -10,7 +10,7 @@ import FirebaseCore
 import FirebaseFirestore
 
 final class RemoteChatConversationDataSource: RemoteChatConversationDataSourceInterface {
-    private let collectionName = "chatConversations"
+    private let collectionName: String
     private let database: Firestore
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
@@ -20,9 +20,7 @@ final class RemoteChatConversationDataSource: RemoteChatConversationDataSourceIn
         encoder: JSONEncoder = JSONEncoder(),
         decoder: JSONDecoder = JSONDecoder()
     ) {
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
+        self.collectionName = AppEnvironment.current.collectionName(for: "chatConversations")
         self.database = database ?? Firestore.firestore()
         self.encoder = encoder
         self.decoder = decoder

@@ -17,79 +17,94 @@ enum NativeAdPlacement {
 }
 
 enum AdMobIDs {
-    static let appID = "ca-app-pub-3795485655104320~5990839688"
+    // 환경별 앱 ID
+    static var appID: String {
+        switch AppEnvironment.current {
+        case .dev:
+            return "ca-app-pub-3795485655104320~5990839688"
+        case .live:
+            return "ca-app-pub-3795485655104320~5990839688"
+        }
+    }
 
-    static let debugConsultationBannerUnitID = "ca-app-pub-3940256099942544/2934735716"
-    static let debugHistoryBannerUnitID = "ca-app-pub-3940256099942544/2934735716"
-    static let debugLaunchInterstitialUnitID = "ca-app-pub-3940256099942544/4411468910"
-    static let debugNativePopupMainUnitID = "ca-app-pub-3940256099942544/3986624511"
-    static let debugNativePopupConversationUnitID = "ca-app-pub-3940256099942544/3986624511"
+    // DEV 환경용 광고 단위 ID (테스트 ID 사용)
+    static let devConsultationBannerUnitID = "ca-app-pub-3940256099942544/2934735716"
+    static let devHistoryBannerUnitID = "ca-app-pub-3940256099942544/2934735716"
+    static let devLaunchInterstitialUnitID = "ca-app-pub-3940256099942544/4411468910"
+    static let devNativePopupMainUnitID = "ca-app-pub-3940256099942544/3986624511"
+    static let devNativePopupConversationUnitID = "ca-app-pub-3940256099942544/3986624511"
 
-    static let releaseConsultationBannerUnitID = "ca-app-pub-3795485655104320/5405991108"
-    static let releaseHistoryBannerUnitID = "ca-app-pub-3795485655104320/2202911566"
-    static let releaseLaunchInterstitialUnitID = "ca-app-pub-3795485655104320/7762467804"
-    static let releaseNativePopupMainUnitID = "ca-app-pub-3795485655104320/6399470582"
-    static let releaseNativePopupConversationUnitID = "ca-app-pub-3795485655104320/7301488719"
+    // LIVE 환경용 광고 단위 ID (실제 광고 ID 사용)
+    static let liveConsultationBannerUnitID = "ca-app-pub-3795485655104320/5405991108"
+    static let liveHistoryBannerUnitID = "ca-app-pub-3795485655104320/2202911566"
+    static let liveLaunchInterstitialUnitID = "ca-app-pub-3795485655104320/7762467804"
+    static let liveNativePopupMainUnitID = "ca-app-pub-3795485655104320/6399470582"
+    static let liveNativePopupConversationUnitID = "ca-app-pub-3795485655104320/7301488719"
 
     static var consultationBannerUnitID: String {
-        #if DEBUG
-        let id = debugConsultationBannerUnitID
-        Log.debug("AdMob 상담 배너 ID(디버그): \(id)", tag: "AdMob")
-        return id
-        #else
-        let id = releaseConsultationBannerUnitID
-        Log.debug("AdMob 상담 배너 ID(릴리즈): \(id)", tag: "AdMob")
-        return id
-        #endif
+        switch AppEnvironment.current {
+        case .dev:
+            let id = devConsultationBannerUnitID
+            Log.debug("AdMob 상담 배너 ID(DEV): \(id)", tag: "AdMob")
+            return id
+        case .live:
+            let id = liveConsultationBannerUnitID
+            Log.debug("AdMob 상담 배너 ID(LIVE): \(id)", tag: "AdMob")
+            return id
+        }
     }
 
     static var historyBannerUnitID: String {
-        #if DEBUG
-        let id = debugHistoryBannerUnitID
-        Log.debug("AdMob 히스토리 배너 ID(디버그): \(id)", tag: "AdMob")
-        return id
-        #else
-        let id = releaseHistoryBannerUnitID
-        Log.debug("AdMob 히스토리 배너 ID(릴리즈): \(id)", tag: "AdMob")
-        return id
-        #endif
+        switch AppEnvironment.current {
+        case .dev:
+            let id = devHistoryBannerUnitID
+            Log.debug("AdMob 히스토리 배너 ID(DEV): \(id)", tag: "AdMob")
+            return id
+        case .live:
+            let id = liveHistoryBannerUnitID
+            Log.debug("AdMob 히스토리 배너 ID(LIVE): \(id)", tag: "AdMob")
+            return id
+        }
     }
 
     static var launchInterstitialUnitID: String {
-        #if DEBUG
-        let id = debugLaunchInterstitialUnitID
-        Log.debug("AdMob 전면 광고 ID(디버그): \(id)", tag: "AdMob")
-        return id
-        #else
-        let id = releaseLaunchInterstitialUnitID
-        Log.debug("AdMob 전면 광고 ID(릴리즈): \(id)", tag: "AdMob")
-        return id
-        #endif
+        switch AppEnvironment.current {
+        case .dev:
+            let id = devLaunchInterstitialUnitID
+            Log.debug("AdMob 전면 광고 ID(DEV): \(id)", tag: "AdMob")
+            return id
+        case .live:
+            let id = liveLaunchInterstitialUnitID
+            Log.debug("AdMob 전면 광고 ID(LIVE): \(id)", tag: "AdMob")
+            return id
+        }
     }
 
 
     static func nativePopupUnitID(for placement: NativeAdPlacement) -> String {
         switch placement {
         case .main:
-            #if DEBUG
-            let id = debugNativePopupMainUnitID
-            Log.debug("AdMob 메인 네이티브 광고 ID(디버그): \(id)", tag: "AdMob")
-            return id
-            #else
-            let id = releaseNativePopupMainUnitID
-            Log.debug("AdMob 메인 네이티브 광고 ID(릴리즈): \(id)", tag: "AdMob")
-            return id
-            #endif
+            switch AppEnvironment.current {
+            case .dev:
+                let id = devNativePopupMainUnitID
+                Log.debug("AdMob 메인 네이티브 광고 ID(DEV): \(id)", tag: "AdMob")
+                return id
+            case .live:
+                let id = liveNativePopupMainUnitID
+                Log.debug("AdMob 메인 네이티브 광고 ID(LIVE): \(id)", tag: "AdMob")
+                return id
+            }
         case .conversation:
-            #if DEBUG
-            let id = debugNativePopupConversationUnitID
-            Log.debug("AdMob 상담 네이티브 광고 ID(디버그): \(id)", tag: "AdMob")
-            return id
-            #else
-            let id = releaseNativePopupConversationUnitID
-            Log.debug("AdMob 상담 네이티브 광고 ID(릴리즈): \(id)", tag: "AdMob")
-            return id
-            #endif
+            switch AppEnvironment.current {
+            case .dev:
+                let id = devNativePopupConversationUnitID
+                Log.debug("AdMob 상담 네이티브 광고 ID(DEV): \(id)", tag: "AdMob")
+                return id
+            case .live:
+                let id = liveNativePopupConversationUnitID
+                Log.debug("AdMob 상담 네이티브 광고 ID(LIVE): \(id)", tag: "AdMob")
+                return id
+            }
         }
     }
 }

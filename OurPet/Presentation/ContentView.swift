@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 struct ContentView: View {
     @Environment(\.diContainer) private var container
@@ -29,9 +30,24 @@ struct ContentView: View {
         .transition(.opacity)
         .animation(.easeInOut(duration: 0.3), value: session.flow)
         .onChange(of: session.flow) { newFlow in
-            if newFlow == .splash {
+            // 화면 전환 Analytics 이벤트
+            switch newFlow {
+            case .splash:
+                AnalyticsHelper.logEvent("flow_splash", parameters: [
+                    "environment": AppEnvironment.current.rawValue
+                ])
                 hasRequestedNativeAd = false
                 return
+            case .login:
+                AnalyticsHelper.logEvent("flow_login", parameters: [
+                    "environment": AppEnvironment.current.rawValue
+                ])
+                return
+            case .main:
+                AnalyticsHelper.logEvent("flow_main", parameters: [
+                    "environment": AppEnvironment.current.rawValue,
+                    "is_logged_in": session.isLoggedIn ? "true" : "false"
+                ])
             }
 
             guard newFlow == .main else { return }

@@ -17,7 +17,7 @@ protocol RemoteConversationDataSourceInterface {
 }
 
 final class RemoteConversationDataSource: RemoteConversationDataSourceInterface {
-    private let collectionName = "conversations"
+    private let collectionName: String
     private let database: Firestore
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
@@ -27,9 +27,7 @@ final class RemoteConversationDataSource: RemoteConversationDataSourceInterface 
         encoder: JSONEncoder = JSONEncoder(),
         decoder: JSONDecoder = JSONDecoder()
     ) {
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
+        self.collectionName = AppEnvironment.current.collectionName(for: "conversations")
         self.database = database ?? Firestore.firestore()
         self.encoder = encoder
         self.decoder = decoder
