@@ -193,6 +193,8 @@ enum PreviewSessionFactory {
 }
 
 private final class PreviewAuthUseCase: AuthUseCaseInterface {
+    
+    
     var userPublisher: AnyPublisher<User?, Never> {
         subject.eraseToAnyPublisher()
     }
@@ -226,6 +228,10 @@ private final class PreviewAuthUseCase: AuthUseCaseInterface {
             current.petOrder = order
             subject.send(current)
         }
+    }
+    
+    func updateUserName(name: String) async throws {
+        
     }
 }
 

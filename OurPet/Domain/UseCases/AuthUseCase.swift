@@ -18,6 +18,7 @@ protocol AuthUseCaseInterface {
     func restoreSession() async throws -> User?
     func deleteAccount() async throws
     func updatePetOrder(_ order: [UUID]) async throws
+    func updateUserName(name: String) async throws
 }
 
 final class AuthUseCase: AuthUseCaseInterface {
@@ -252,6 +253,26 @@ final class AuthUseCase: AuthUseCaseInterface {
             Log.info("펫 정렬 순서 Firestore 반영 완료", tag: logTag)
         } catch {
             Log.error("펫 정렬 순서 저장 실패: \(error.localizedDescription)", tag: logTag)
+            throw error
+        }
+    }
+
+    func updateUserName(name: String) async throws {
+        guard var user = userRepository.currentUser else {
+            Log.warning("프로필을 수정할 사용자 정보가 없습니다", tag: logTag)
+            throw NSError(domain: "AuthUseCase", code: -1, userInfo: [NSLocalizedDescriptionKey: "로그인 사용자가 없습니다."])
+        }
+
+        user.name = name
+
+        do {
+            try await remoteUserDataSource.upsertUser(user)
+            userRepository.updateUser { stored in
+                stored.name = name
+            }
+            Log.info("사용자 프로필 업데이트 완료", tag: logTag)
+        } catch {
+            Log.error("사용자 프로필 업데이트 실패: \(error.localizedDescription)", tag: logTag)
             throw error
         }
     }

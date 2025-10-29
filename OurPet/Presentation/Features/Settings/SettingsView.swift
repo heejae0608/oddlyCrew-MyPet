@@ -18,6 +18,8 @@ struct SettingsView: View {
     @State private var showingToastMessage = false
     @State private var errorMessage: String?
     @State private var showingEmailCopiedAlert = false
+    @State private var showingEditProfile = false
+    @State private var didPromptEmptyName = false
     
     private let email = SendEmailToDeveloper(
         toAddress: "oddlycrew@gmail.com",
@@ -156,19 +158,40 @@ struct SettingsView: View {
             .onChange(of: session.pets) { pets in
                 Task { await viewModel.refreshConsultationCount(pets: pets) }
             }
+            .onAppear {
+                guard didPromptEmptyName == false else { return }
+                if let user = viewModel.user, user.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    showingEditProfile = true
+                    didPromptEmptyName = true
+                }
+            }
+            .onChange(of: viewModel.user?.name) { _ in
+                guard didPromptEmptyName == false else { return }
+                if let user = viewModel.user, user.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    showingEditProfile = true
+                    didPromptEmptyName = true
+                }
+            }
         }
         .background(AppColor.surfaceBackground.ignoresSafeArea())
+        .sheet(isPresented: $showingEditProfile) {
+            if let user = viewModel.user {
+                UserNameEditView(currentName: user.name)
+                    .presentationDetents([.fraction(0.4)])
+                    .environmentObject(session)
+            }
+        }
     }
 
     /// 사용자 정보
     private var userInfo: some View {
         HStack(spacing: 8) {
-            Image(systemName: "person.circle.fill")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 45, height: 45)
-                .foregroundStyle(.appPeach)
-                .clipShape(Circle())
+//            Image(systemName: "person.circle.fill")
+//                .resizable()
+//                .scaledToFit()
+//                .frame(width: 45, height: 45)
+//                .foregroundStyle(.appPeach)
+//                .clipShape(Circle())
             
             VStack(alignment: .leading, spacing: 6) {
                 if let user = viewModel.user {
@@ -180,6 +203,24 @@ struct SettingsView: View {
                             .appFont(14, weight: .light)
                             .foregroundStyle(AppColor.subText)
                     }
+                }
+            }
+
+            Spacer()
+
+            if let user = viewModel.user {
+                Button {
+                    showingEditProfile = true
+                } label: {
+                    Text("관리")
+                        .appFont(14, weight: .semibold)
+                        .foregroundStyle(AppColor.orange)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(AppColor.orange, lineWidth: 1)
+                        )
                 }
             }
         }

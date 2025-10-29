@@ -188,6 +188,23 @@ final class SessionViewModel: ObservableObject {
         Log.debug("세션 상태 초기화", tag: "Session")
     }
 
+    func updateUserProfile(name: String, email: String?) {
+        loadingMessage = "프로필을 저장하는 중입니다..."
+        appState = .loading
+        Task {
+            do {
+                try await authUseCase.updateUserName(name: name)
+                await MainActor.run {
+                    self.appState = .default
+                }
+            } catch {
+                await MainActor.run {
+                    self.appState = .error(error.localizedDescription)
+                }
+            }
+        }
+    }
+
     func markTrackingPermissionResolved() {
         guard isTrackingPermissionResolved == false else { return }
         isTrackingPermissionResolved = true
