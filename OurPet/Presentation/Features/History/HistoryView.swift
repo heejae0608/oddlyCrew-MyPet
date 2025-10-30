@@ -79,6 +79,8 @@ struct HistoryView: View {
             .onChange(of: updateData) {
                 chatViewModel.updateFromHistoryDetailView(updateData: updateData)
             }
+        }.onAppear {
+            AnalyticsHelper.sendScreenEvent(event: .history)
         }
     }
 
@@ -156,6 +158,7 @@ struct HistoryView: View {
     private var petSelectionRow: some View {
         HStack {
             Button {
+                AnalyticsHelper.sendClickEvent(event: .clicked_history_filter)
                 showingPetSelection = true
             } label: {
                 HStack {
@@ -610,6 +613,7 @@ private struct HistoryPetSelectionView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("닫기") {
+                        AnalyticsHelper.sendClickEvent(event: .clicked_history_filter_close)
                         dismiss()
                     }
                 }

@@ -62,11 +62,15 @@ struct ChatView: View {
                 .environmentObject(session)
         }
         .background(AppColor.surfaceBackground.ignoresSafeArea())
+        .onAppear {
+            AnalyticsHelper.sendScreenEvent(event: .chat)
+        }
     }
 
     private func petSelectionBar(pets: [Pet]) -> some View {
         HStack {
             Button {
+                AnalyticsHelper.sendClickEvent(event: .clicked_chat_filter)
                 showingPetSelection = true
             } label: {
                 HStack {
@@ -90,6 +94,7 @@ struct ChatView: View {
             // 새 대화 시작 버튼 (채팅이 있을 때만 표시)
             if viewModel.messages.isNotEmpty {
                 Button {
+                    AnalyticsHelper.sendClickEvent(event: .clicked_chat_change_chatting_room)
                     viewModel.startNewConversation()
                 } label: {
                     Image(systemName: "arrow.triangle.2.circlepath")
@@ -228,6 +233,7 @@ struct ChatView: View {
                     // 전송 버튼 (로딩 중에는 숨김)
                     if !viewModel.isLoading {
                         Button {
+                            AnalyticsHelper.sendClickEvent(event: .clicked_chat_send_message)
                             viewModel.sendMessage()
                             isMessageFieldFocused = false
                         } label: {
@@ -326,6 +332,7 @@ private struct PetSelectionView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("닫기") {
+                        AnalyticsHelper.sendClickEvent(event: .clicked_chat_filter_close)
                         dismiss()
                     }
                     .foregroundStyle(AppColor.ink)

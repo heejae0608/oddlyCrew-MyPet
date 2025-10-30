@@ -90,16 +90,22 @@ struct SettingsView: View {
                 }
             }
             .alert("로그아웃", isPresented: $showingLogoutAlert) {
-                Button("취소", role: .cancel) { }
+                Button("취소", role: .cancel) {
+                    AnalyticsHelper.sendClickEvent(event: .clicked_mypage_logout_cancel)
+                }
                 Button("로그아웃", role: .destructive) {
+                    AnalyticsHelper.sendClickEvent(event: .clicked_mypage_logout_confirm)
                     viewModel.logout()
                 }
             } message: {
                 Text("정말 로그아웃하시겠습니까?")
             }
             .alert("계정 삭제", isPresented: $showingDeleteAccountAlert) {
-                Button("취소", role: .cancel) { }
+                Button("취소", role: .cancel) {
+                    AnalyticsHelper.sendClickEvent(event: .clicked_mypage_quit_ourpet_cancel)
+                }
                 Button("삭제", role: .destructive) {
+                    AnalyticsHelper.sendClickEvent(event: .clicked_mypage_quit_ourpet_confirm)
                     viewModel.deleteAccount()
                 }
             } message: {
@@ -159,6 +165,7 @@ struct SettingsView: View {
                 Task { await viewModel.refreshConsultationCount(pets: pets) }
             }
             .onAppear {
+                AnalyticsHelper.sendScreenEvent(event: .mypage)
                 guard didPromptEmptyName == false else { return }
                 if let user = viewModel.user, user.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     showingEditProfile = true
@@ -210,6 +217,7 @@ struct SettingsView: View {
 
             if let user = viewModel.user {
                 Button {
+                    AnalyticsHelper.sendClickEvent(event: .clicked_mypage_edit_name)
                     showingEditProfile = true
                 } label: {
                     Text("관리")
@@ -299,18 +307,21 @@ struct SettingsView: View {
                 Text("AppStore에서 보기")
                     .appFont(14)
                     .foregroundStyle(.black)
-                
+
                 Spacer()
-                if let url = viewModel.appStoreURL {
-                    Link(destination: url) {
-                        Image(systemName: "chevron.right")
-                            .foregroundStyle(.black)
-                    }
-                }
+
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(.black)
             }
             .contentShape(Rectangle())
             .padding(.horizontal, 16)
             .padding(.bottom, 20)
+            .onTapGesture {
+                AnalyticsHelper.sendClickEvent(event: .clicked_mypage_go_appstore)
+                if let url = viewModel.appStoreURL {
+                    UIApplication.shared.open(url)
+                }
+            }
             
             HStack {
                 Text("개발자 문의")
@@ -324,6 +335,7 @@ struct SettingsView: View {
             }
             .contentShape(Rectangle())
             .onTapGesture {
+                AnalyticsHelper.sendClickEvent(event: .clicked_mypage_ask_for_developer)
                 email.send(openURL: openURL) {
                     showingSendEmailFailedAlert = true
                 }
@@ -345,7 +357,9 @@ struct SettingsView: View {
                 .contentShape(Rectangle())
                 .padding(.horizontal, 16)
                 .padding(.bottom, 20)
-            }
+            }.simultaneousGesture(TapGesture().onEnded {
+                AnalyticsHelper.sendClickEvent(event: .clicked_mypage_opensource_library)
+            })
         }
         .background(AppColor.white)
         .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -357,6 +371,7 @@ struct SettingsView: View {
     private var appAccountInfo: some View {
         VStack {
             Button {
+                AnalyticsHelper.sendClickEvent(event: .clicked_mypage_logout)
                 showingLogoutAlert = true
             } label: {
                 Text("로그아웃")
@@ -372,6 +387,7 @@ struct SettingsView: View {
             .padding(.bottom, 8)
             
             Button {
+                AnalyticsHelper.sendClickEvent(event: .clicked_mypage_quit_ourpet)
                 showingDeleteAccountAlert = true
             } label: {
                 Text("회원탈퇴")

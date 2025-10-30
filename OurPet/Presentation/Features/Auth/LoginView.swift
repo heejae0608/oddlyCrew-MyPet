@@ -54,7 +54,8 @@ struct LoginView: View {
                             Log.debug("Apple SignIn 요청 준비", tag: "LoginView")
                             
                             // Apple 로그인 버튼 클릭 이벤트
-                            AnalyticsHelper.logButtonClick("apple_signin", screenName: "LoginView")
+                            AnalyticsHelper.sendClickEvent(event: .clicked_login_with_apple)
+                            // AnalyticsHelper.logButtonClick("apple_signin", screenName: "LoginView")
                             AnalyticsHelper.logEvent("apple_login_attempt", parameters: [
                                 "environment": AppEnvironment.current.rawValue
                             ])
@@ -88,10 +89,11 @@ struct LoginView: View {
         }
         .onAppear {
             // 로그인 화면 진입 이벤트
-            AnalyticsHelper.logScreenView("LoginView")
-            AnalyticsHelper.logEvent("login_screen_viewed", parameters: [
-                "environment": AppEnvironment.current.rawValue
-            ])
+            AnalyticsHelper.sendScreenEvent(event: .login)
+//            AnalyticsHelper.logScreenView("LoginView")
+//            AnalyticsHelper.logEvent("login_screen_viewed", parameters: [
+//                "environment": AppEnvironment.current.rawValue
+//            ])
         }
         .alert("로그인 오류", isPresented: $showingAlert) {
             Button("확인", role: .cancel) {

@@ -5,7 +5,12 @@ struct PetOverviewSection: View {
     let onEdit: (Pet) -> Void
 
     var body: some View {
-        PetDetailCard(pet: pet, onEdit: { onEdit(pet) })
+        PetDetailCard(
+            pet: pet,
+            onEdit: {
+            AnalyticsHelper.sendClickEvent(event: .clicked_home_edit_ourpet)
+            onEdit(pet)
+        })
     }
 }
 

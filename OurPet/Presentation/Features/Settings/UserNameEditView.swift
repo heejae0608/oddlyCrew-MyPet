@@ -67,6 +67,7 @@ struct UserNameEditView: View {
     }
 
     private func save() {
+        AnalyticsHelper.sendClickEvent(event: .clicked_mypage_save_name)
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let currentEmail = session.currentUser?.email
         session.updateUserProfile(name: trimmedName, email: currentEmail)

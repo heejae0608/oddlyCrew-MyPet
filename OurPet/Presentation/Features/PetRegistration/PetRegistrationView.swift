@@ -42,6 +42,11 @@ struct PetRegistrationView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("취소") {
+                        if existingPet == nil {
+                            AnalyticsHelper.sendClickEvent(event: .clicked_home_register_ourpet_cancel)
+                        } else {
+                            AnalyticsHelper.sendClickEvent(event: .clicked_home_edit_ourpet_cancel)
+                        }
                         dismiss()
                     }
                     .foregroundStyle(AppColor.subText)
@@ -57,6 +62,12 @@ struct PetRegistrationView: View {
                 }
             }
             .tint(AppColor.orange)
+        }.onAppear {
+            if existingPet == nil {
+                AnalyticsHelper.sendScreenEvent(event: .home_register_ourpet)
+            } else {
+                AnalyticsHelper.sendScreenEvent(event: .home_edit_ourpet)
+            }
         }
     }
 
@@ -70,6 +81,13 @@ struct PetRegistrationView: View {
 
     private func handleSubmit() {
         guard formData.isValid else { return }
+        
+        if existingPet == nil {
+            AnalyticsHelper.sendClickEvent(event: .clicked_home_register_ourpet_confirm)
+        } else {
+            AnalyticsHelper.sendClickEvent(event: .clicked_home_edit_ourpet_save)
+        }
+        
         var workingForm = formData
 
         if workingForm.profileImageData == nil,

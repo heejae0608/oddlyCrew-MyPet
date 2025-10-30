@@ -38,11 +38,14 @@ struct PetOrderSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("취소") {
+                        AnalyticsHelper.sendClickEvent(event: .clicked_home_change_ourpet_order_cancel)
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("완료") {
+                        AnalyticsHelper.sendClickEvent(event: .clicked_home_change_ourpet_order_confirm)
+                        
                         let newOrder = items.map(\.id)
                         onComplete(newOrder)
                         dismiss()

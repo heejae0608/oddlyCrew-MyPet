@@ -80,6 +80,7 @@ struct HomeView: View {
 
                     Button {
                         showingPetRegistration = true
+                        AnalyticsHelper.sendClickEvent(event: .clicked_home_register_ourpet)
                     } label: {
                         Image(systemName: "plus")
                     }
@@ -109,10 +110,14 @@ struct HomeView: View {
 
     private func openReorderSheet() {
         guard hasPets else { return }
+        
+        AnalyticsHelper.sendClickEvent(event: .clicked_home_change_ourpet_order)
+        
         showingOrderSheet = true
     }
 
     private func refreshTip() {
+        AnalyticsHelper.sendScreenEvent(event: .home)
         dailyTip = tipProvider.randomTip(for: session.pets)
     }
 }

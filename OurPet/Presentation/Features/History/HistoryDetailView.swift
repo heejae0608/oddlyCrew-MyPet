@@ -57,46 +57,50 @@ struct HistoryDetailView: View {
     }
     
     var body: some View {
-        if messagePreviews.isEmpty {
-            Text("대화 기록 없음")
-                .appFont(17)
-                .foregroundStyle(AppColor.subText)
-                .italic()
-        } else {
-                    HistoryMessageList
-                .navigationTitle("상담 내역")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .navigationBarBackButtonHidden(true)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "chevron.left")
-                                Text("이전")
-                            }
-                        }
-                    }
-                    if conversation.status != .closed {
-                        ToolbarItem(placement: .topBarTrailing) {
+        Group {
+            if messagePreviews.isEmpty {
+                Text("대화 기록 없음")
+                    .appFont(17)
+                    .foregroundStyle(AppColor.subText)
+                    .italic()
+            } else {
+                HistoryMessageList
+                    .navigationTitle("상담 내역")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .navigationBarBackButtonHidden(true)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
                             Button {
-                                updateData = UpdateHistoryToChat(
-                                    messages: conversation.messages,
-                                    selectedPet: selectedPet
-                                )
-
                                 dismiss()
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                    selectedTab = 2 // 상담 탭
-                                }
                             } label: {
-                                Text("상담 이어가기")
+                                HStack(spacing: 4) {
+                                    Image(systemName: "chevron.left")
+                                    Text("이전")
+                                }
                             }
-
+                        }
+                        if conversation.status != .closed {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button {
+                                    updateData = UpdateHistoryToChat(
+                                        messages: conversation.messages,
+                                        selectedPet: selectedPet
+                                    )
+                                    
+                                    dismiss()
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        selectedTab = 2 // 상담 탭
+                                    }
+                                } label: {
+                                    Text("상담 이어가기")
+                                }
+                                
+                            }
                         }
                     }
-                }
+            }
+        }.onAppear {
+            AnalyticsHelper.sendScreenEvent(event: .history_detail)
         }
     }
     

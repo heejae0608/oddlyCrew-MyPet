@@ -30,6 +30,9 @@ struct OpenSourceLicensesView: View {
             .padding(.vertical, 4)
         }
         .navigationTitle("오픈소스 라이선스")
+        .onAppear {
+            AnalyticsHelper.sendScreenEvent(event: .mypage_opensource_library)
+        }
     }
 }
 
