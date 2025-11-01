@@ -2,7 +2,7 @@
 //  AppConfigRepositoryInterface.swift
 //  OurPet
 //
-//  Created by Codex on 10/29/24.
+//  Created by 전희재 on 10/29/25.
 //
 
 import Foundation

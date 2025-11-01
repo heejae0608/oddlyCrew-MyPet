@@ -8,6 +8,8 @@
 	<string>ca-app-pub-3795485655104320~5990839688</string>
 	<key>GADDelayAppMeasurementInit</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>
