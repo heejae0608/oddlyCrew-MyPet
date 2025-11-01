@@ -19,7 +19,6 @@ final class ChatGPTService: ChatGPTServicing {
     private let urlSession: URLSession
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
-    private let systemPrompt: String
 
     init(
         apiKey: String = APIConfig.OpenAI.apiKey,
@@ -38,12 +37,6 @@ final class ChatGPTService: ChatGPTServicing {
         }
         self.baseURL = url
 
-        // 시스템 프롬프트 파일 로드
-        guard let promptPath = Bundle.main.path(forResource: "system_prompt", ofType: "txt"),
-              let promptContent = try? String(contentsOfFile: promptPath, encoding: .utf8) else {
-            preconditionFailure("⚠️ system_prompt.txt 파일을 찾을 수 없습니다")
-        }
-        self.systemPrompt = promptContent
     }
 
     func send(messages: [ChatMessage], pet: Pet?, previousSummary: String?) -> AnyPublisher<ChatResult, Error> {
@@ -113,7 +106,7 @@ final class ChatGPTService: ChatGPTServicing {
         // Responses API용 입력 준비
         var inputItems: [ResponseInputItem] = []
 
-        // 시스템 프롬프트 + 펫 정보
+        // 프롬프트와 함께 사용할 펫 정보
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy.MM.dd"
 

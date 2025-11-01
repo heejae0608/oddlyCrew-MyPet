@@ -56,16 +56,9 @@ class APIConfig: ObservableObject {
     // MARK: - OpenAI API 설정 (Responses API)
     struct OpenAI {
         static var apiKey: String {
-            // 환경별 API 키 우선, 없으면 시크릿 파일, 마지막으로 환경변수
-            let envKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"]
-            let devKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY_DEV"]
-            let liveKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY_LIVE"]
-            
             switch AppEnvironment.current {
-            case .dev:
-                return devKey ?? APIConfig.secrets.apiKey ?? envKey ?? ""
-            case .live:
-                return liveKey ?? APIConfig.secrets.apiKey ?? envKey ?? ""
+            case .dev, .live:
+                return APIConfig.secrets.apiKey ?? ""
             }
         }
 
