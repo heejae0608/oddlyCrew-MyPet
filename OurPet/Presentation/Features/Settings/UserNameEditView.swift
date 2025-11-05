@@ -34,7 +34,7 @@ struct UserNameEditView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("이름")
                         .appFont(14, weight: .semibold)
-                        .foregroundStyle(AppColor.ink)
+                        .foregroundStyle(AppColor.font)
                     TextField("이름을 입력하세요", text: $name)
                         .textInputAutocapitalization(.words)
                         .disableAutocorrection(true)
@@ -74,5 +74,6 @@ struct UserNameEditView: View {
         dismiss()
     }
 }
+
 
 

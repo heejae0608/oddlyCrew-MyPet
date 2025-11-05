@@ -231,6 +231,7 @@ struct ChatView: View {
                     .padding(.horizontal, 12)
                     
                     // 전송 버튼 (로딩 중에는 숨김)
+                    // 전송 버튼 (로딩 중에는 숨김)
                     if !viewModel.isLoading {
                         Button {
                             AnalyticsHelper.sendClickEvent(event: .clicked_chat_send_message)
@@ -420,7 +421,7 @@ struct ChatMessageView: View {
                         
                         Text(assistantDisplayName(for: chatViewModel.selectedPet))
                             .appFont(12)
-                            .foregroundColor(AppColor.ink)
+                            .foregroundColor(AppColor.font)
                     }
                     // 메인 메시지
                     Text(message.content)

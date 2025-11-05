@@ -50,4 +50,5 @@ enum AppColor {
     static let shadowMedium = Color("AppShadowMedium")
     static let shadowSoft = Color("AppShadowSoft")
     static let sectionShadow = Color("AppSectionShadow")
+    static let font = Color("Appfont")
 }
